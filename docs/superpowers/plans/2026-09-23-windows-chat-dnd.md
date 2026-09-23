@@ -3076,6 +3076,16 @@ Create `docs/verification/windows-chat-dnd-acceptance.md` with:
 
 - [ ] **Step 3: Publish a portable release**
 
+Add these properties to the first `PropertyGroup` in `src/ChatDND.App/ChatDND.App.csproj`:
+
+```xml
+<AssemblyTitle>ChatDND</AssemblyTitle>
+<Product>ChatDND</Product>
+<Description>Windows 应用级免打扰工具</Description>
+<Company>ChatDND</Company>
+<Version>0.1.0</Version>
+```
+
 Run:
 
 ```powershell
