@@ -1,0 +1,10 @@
+.vs/
+.idea/
+bin/
+obj/
+.dotnet/
+TestResults/
+*.user
+*.suo
+logs/
+.superpowers/sdd/
