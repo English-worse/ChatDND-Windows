@@ -916,7 +916,7 @@ public sealed class DndCoordinatorTests
 
         coordinator.Disable();
 
-        Assert.True(controller.MuteStates[originallyMuted.Key]);
+        Assert.False(controller.MuteStates.ContainsKey(originallyMuted.Key));
         Assert.False(controller.MuteStates[originallyAudible.Key]);
     }
 

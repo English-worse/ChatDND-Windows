@@ -4,6 +4,37 @@
 
 ### 问题描述
 
+需要把音频会话枚举、静音控制和免打扰状态机解耦，确保多开实例、原始静音状态恢复和规则变更都能在单元测试中验证。
+
+### 解决方案
+
+新增音频会话提供器和控制器接口、恢复日志接口、免打扰状态结果模型和 `DndCoordinator`。协调器统一管理会话原状态、逐个实例静音、处理新会话和规则移除，并只在恢复失败时保留恢复记录。
+
+### 修改明细
+
+| 文件 | 改动点 | 改动类型 | 说明 |
+|---|---|---|---|
+| `src/ChatDND.Core/Audio/IAudioSessionProvider.cs` | 会话枚举接口 | 新功能 | 为真实 WASAPI 和测试假实现提供统一入口 |
+| `src/ChatDND.Core/Audio/IAudioSessionController.cs` | 会话控制接口 | 新功能 | 返回真实静音操作是否成功 |
+| `src/ChatDND.Core/Services/IRecoveryJournal.cs` | 恢复日志接口 | 新功能 | 支持保存、加载和清理恢复记录 |
+| `src/ChatDND.Core/Services/DndCoordinator.cs` | 免打扰协调器 | 新功能 | 多实例静音、新会话处理、原状态恢复和规则变更同步 |
+| `src/ChatDND.Core/Models/RecoveryRecord.cs` | 恢复记录模型 | 新功能 | 保存会话键、原静音状态和是否由工具修改 |
+| `src/ChatDND.Core/Models/DndEnableResult.cs` | 启用结果 | 新功能 | 区分已启用和缺少规则 |
+| `tests/ChatDND.Core.Tests/Services/DndCoordinatorTests.cs` | 协调器测试 | 测试 | 覆盖多实例、无规则、原状态恢复和新会话 |
+| `tests/ChatDND.Core.Tests/Services/Fakes/*` | 测试替身 | 测试 | 提供可观测的会话提供器、控制器和恢复日志 |
+
+### 验证方法
+
+运行 `dotnet test tests/ChatDND.Core.Tests/ChatDND.Core.Tests.csproj --filter FullyQualifiedName~DndCoordinatorTests` 和 `dotnet test ChatDND.sln`。
+
+### 预期效果和潜在风险
+
+核心状态机可以在不依赖真实音频设备的情况下测试。真实设备行为仍需要 Task 6 的 WASAPI 适配器和 Task 11 的本机集成验证。
+
+## 2026-09-23 - 新功能 - 修改人：Codex
+
+### 问题描述
+
 应用规则需要本地持久化，且损坏配置和异常扫描间隔不能导致程序启动失败。
 
 ### 解决方案
