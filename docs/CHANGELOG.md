@@ -1,5 +1,31 @@
 # 修改记录
 
+## 2026-09-23 - 新功能 - 修改人：Codex
+
+### 问题描述
+
+应用规则需要本地持久化，且损坏配置和异常扫描间隔不能导致程序启动失败。
+
+### 解决方案
+
+新增 `DndSettings` 和 `AppRuleStore`，使用 `System.Text.Json` 读写本地配置。加载时规范化扫描间隔到 100 至 5000 毫秒，遇到损坏 JSON 时保留备份并回退到默认配置。
+
+### 修改明细
+
+| 文件 | 改动点 | 改动类型 | 说明 |
+|---|---|---|---|
+| `src/ChatDND.Core/Models/DndSettings.cs` | 配置模型 | 新功能 | 保存自动开启、托盘、管理员启动、扫描间隔和应用规则 |
+| `src/ChatDND.Core/Services/AppRuleStore.cs` | 配置存储 | 新功能 | 原子保存、损坏备份、默认值回退和扫描间隔约束 |
+| `tests/ChatDND.Core.Tests/Services/AppRuleStoreTests.cs` | 存储测试 | 新功能 | 覆盖读写、损坏配置和异常扫描间隔 |
+
+### 验证方法
+
+运行 `dotnet test tests/ChatDND.Core.Tests/ChatDND.Core.Tests.csproj --filter FullyQualifiedName~AppRuleStoreTests` 和 `dotnet test ChatDND.sln`。
+
+### 预期效果和潜在风险
+
+后续 UI 可以稳定保存和恢复用户规则。配置目录仍需由上层使用用户本地目录，不能写入目标聊天应用的数据目录。
+
 ## 2026-09-23 - Bug修复 - 严重程度：中 - 修改人：Codex
 
 ### 问题描述
