@@ -4,6 +4,37 @@
 
 ### 问题描述
 
+应用规则、音频会话标识和进程路径需要统一的数据模型与匹配规则，否则后续的多开识别和音频会话筛选会重复实现且容易产生路径大小写差异。
+
+### 解决方案
+
+增加 Core 领域模型、进程路径规范化和应用规则匹配器。完整路径采用规范化大小写不敏感比较；只有完整路径不可读取时才回退到文件名，并且显式路径之外的共享辅助进程不会被自动匹配。
+
+### 修改明细
+
+| 文件 | 改动点 | 改动类型 | 说明 |
+|---|---|---|---|
+| `src/ChatDND.Core/Models/AppRule.cs` | 应用规则 | 新功能 | 保存应用标识、显示名、可执行文件路径和启用状态 |
+| `src/ChatDND.Core/Models/SessionKey.cs` | 音频会话标识 | 新功能 | 组合会话标识、会话实例标识和进程 ID |
+| `src/ChatDND.Core/Models/SessionPlaybackState.cs` | 会话状态 | 新功能 | 表示音频会话的活动、非活动和过期状态 |
+| `src/ChatDND.Core/Models/AudioSessionSnapshot.cs` | 音频会话快照 | 新功能 | 传递会话路径、静音状态和播放状态 |
+| `src/ChatDND.Core/Matching/ProcessPathNormalizer.cs` | 路径规范化 | 新功能 | 去除引号和空白、转换完整路径并处理无效路径 |
+| `src/ChatDND.Core/Matching/AppRuleMatcher.cs` | 规则匹配 | 新功能 | 按完整路径匹配启用规则，避免仅凭文件名误匹配 |
+| `tests/ChatDND.Core.Tests/Matching/ProcessPathNormalizerTests.cs` | 路径测试 | 新功能 | 覆盖正常路径、空路径和无效路径 |
+| `tests/ChatDND.Core.Tests/Matching/AppRuleMatcherTests.cs` | 匹配测试 | 新功能 | 覆盖大小写、禁用规则、同名异路径和未声明辅助进程 |
+
+### 验证方法
+
+运行 `dotnet test ChatDND.sln`，确认新增匹配逻辑和既有 bootstrap 测试全部通过。
+
+### 预期效果和潜在风险
+
+后续任务可以复用统一的应用规则和会话标识。不同应用的辅助进程仍需用户显式添加路径，否则对应声音不会被静音。
+
+## 2026-09-23 - 新功能 - 修改人：Codex
+
+### 问题描述
+
 仓库尚无 .NET 解决方案、项目结构或可执行测试入口，后续任务无法在统一目标框架下开发。
 
 ### 解决方案
