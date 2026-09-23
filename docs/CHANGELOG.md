@@ -1,5 +1,35 @@
 # 修改记录
 
+## 2026-09-23 - Bug修复 - 严重程度：中 - 修改人：Codex
+
+### 问题描述
+
+规则被移除时，如果会话解除静音失败，协调器仍会删除恢复记录，导致该会话后续无法再被恢复；同时 `ApplyRules` 没有对重复 `SessionKey` 去重，与 `Disable` 的行为不一致。
+
+### 根因分析
+
+规则移除分支忽略了 `TrySetMute` 的返回值并立即删除字典记录；扫描会话时直接遍历原始列表，没有复用按会话键去重的辅助方法。现有测试也没有覆盖这两个分支。
+
+### 解决方案
+
+规则移除恢复失败时保留记录并继续写入恢复日志；`ApplyRules` 统一通过 `GetSessionsByKey` 去重；增加规则移除成功、规则移除失败和重复会话键测试；修正测试替身在失败时仍写状态的问题。
+
+### 修改明细
+
+| 文件 | 改动点 | 改动类型 | 说明 |
+|---|---|---|---|
+| `src/ChatDND.Core/Services/DndCoordinator.cs` | 规则移除和去重 | Bug修复 | 失败时保留恢复记录，扫描会话按 SessionKey 统一去重 |
+| `tests/ChatDND.Core.Tests/Services/DndCoordinatorTests.cs` | 回归测试 | 测试 | 覆盖规则移除、恢复失败和重复键 |
+| `tests/ChatDND.Core.Tests/Services/Fakes/FakeAudioSessionController.cs` | 测试替身 | 测试 | 失败时不写入状态，支持失败注入 |
+
+### 验证方法
+
+运行聚焦的 `DndCoordinatorTests`，再运行 `dotnet test ChatDND.sln`。
+
+### 预期效果和潜在风险
+
+规则变更和重复会话不会再丢失恢复记录。真实 WASAPI 的重复会话行为仍需在 Task 6 和 Task 11 中验证。
+
 ## 2026-09-23 - 新功能 - 修改人：Codex
 
 ### 问题描述

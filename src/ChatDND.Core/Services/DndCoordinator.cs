@@ -82,7 +82,7 @@ public sealed class DndCoordinator
 
     private void ApplyRules(IReadOnlyList<AppRule> rules)
     {
-        var sessions = _provider.GetSessions();
+        var sessions = GetSessionsByKey().Values.ToArray();
         var liveKeys = sessions.Select(item => item.Key).ToHashSet();
         var matchingKeys = new HashSet<SessionKey>();
 
@@ -133,7 +133,10 @@ public sealed class DndCoordinator
                 && record.MutedByTool
                 && !record.OriginalMute)
             {
-                _controller.TrySetMute(key, muted: false);
+                if (!_controller.TrySetMute(key, muted: false))
+                {
+                    continue;
+                }
             }
 
             _managed.Remove(key);

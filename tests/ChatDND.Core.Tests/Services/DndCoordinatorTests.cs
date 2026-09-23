@@ -92,6 +92,66 @@ public sealed class DndCoordinatorTests
         Assert.True(controller.MuteStates[laterSession.Key]);
     }
 
+    [Fact]
+    public void Tick_WhenRuleIsRemoved_RestoresSession()
+    {
+        var provider = new FakeAudioSessionProvider();
+        var controller = new FakeAudioSessionController { Provider = provider };
+        var session = Session(
+            @"C:\Program Files\Tencent\WeChat\WeChat.exe",
+            404);
+        provider.Sessions.Add(session);
+        var journal = new FakeRecoveryJournal();
+        var coordinator = new DndCoordinator(provider, controller, journal);
+        coordinator.Enable([WeChat]);
+
+        coordinator.Tick([]);
+
+        Assert.False(controller.MuteStates[session.Key]);
+        Assert.Empty(journal.Load());
+    }
+
+    [Fact]
+    public void Tick_WhenRuleRemovalRestoreFails_KeepsRecoveryRecord()
+    {
+        var provider = new FakeAudioSessionProvider();
+        var controller = new FakeAudioSessionController { Provider = provider };
+        var session = Session(
+            @"C:\Program Files\Tencent\WeChat\WeChat.exe",
+            505);
+        provider.Sessions.Add(session);
+        var journal = new FakeRecoveryJournal();
+        var coordinator = new DndCoordinator(provider, controller, journal);
+        coordinator.Enable([WeChat]);
+        controller.FailingMuteKeys.Add(session.Key);
+
+        coordinator.Tick([]);
+
+        var record = Assert.Single(journal.Load());
+        Assert.Equal(session.Key, record.Key);
+        Assert.True(record.MutedByTool);
+        Assert.False(record.OriginalMute);
+    }
+
+    [Fact]
+    public void Enable_WithDuplicateSessionKey_MutesOnce()
+    {
+        var provider = new FakeAudioSessionProvider();
+        var controller = new FakeAudioSessionController { Provider = provider };
+        var first = Session(
+            @"C:\Program Files\Tencent\WeChat\WeChat.exe",
+            606);
+        var duplicate = first with { State = SessionPlaybackState.Active };
+        provider.Sessions.AddRange([first, duplicate]);
+        var journal = new FakeRecoveryJournal();
+        var coordinator = new DndCoordinator(provider, controller, journal);
+
+        coordinator.Enable([WeChat]);
+
+        Assert.Single(journal.Load());
+        Assert.True(controller.MuteStates[first.Key]);
+    }
+
     private static AudioSessionSnapshot Session(
         string processPath,
         uint processId,
