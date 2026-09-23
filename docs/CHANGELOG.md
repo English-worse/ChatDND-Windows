@@ -1,5 +1,32 @@
 # 修改记录
 
+## 2026-09-23 - 新功能 - 修改人：Codex
+
+### 问题描述
+
+程序异常退出后，之前被工具静音的会话需要在下一次启动时安全恢复，且恢复失败不能再丢失记录。
+
+### 解决方案
+
+新增 JSON 恢复日志和启动恢复服务。恢复时只处理仍存活、由工具静音且原本未静音的会话；恢复失败的记录保留在日志中，下一次启动继续尝试。
+
+### 修改明细
+
+| 文件 | 改动点 | 改动类型 | 说明 |
+|---|---|---|---|
+| `src/ChatDND.Core/Services/JsonRecoveryJournal.cs` | 恢复日志持久化 | 新功能 | 原子写入、损坏备份、清空和异常读写处理 |
+| `src/ChatDND.Core/Services/RecoveryService.cs` | 启动恢复 | 新功能 | 只恢复工具修改过的会话，失败记录保留 |
+| `tests/ChatDND.Core.Tests/Services/JsonRecoveryJournalTests.cs` | 日志测试 | 测试 | 覆盖往返保存、清空和损坏 JSON |
+| `tests/ChatDND.Core.Tests/Services/RecoveryServiceTests.cs` | 恢复测试 | 测试 | 覆盖恢复、原始静音保护和失败保留 |
+
+### 验证方法
+
+运行 `dotnet test tests/ChatDND.Core.Tests/ChatDND.Core.Tests.csproj --filter FullyQualifiedName~Recovery`，再运行 `dotnet test ChatDND.sln`。
+
+### 预期效果和潜在风险
+
+异常退出后不再静默丢失恢复机会。真实音频设备是否允许解除静音仍由 Task 6 和 Task 11 验证。
+
 ## 2026-09-23 - Bug修复 - 严重程度：中 - 修改人：Codex
 
 ### 问题描述
