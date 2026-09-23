@@ -4,6 +4,39 @@
 
 ### 问题描述
 
+核心协调器需要通过真实 Windows Core Audio 会话控制微信、QQ、钉钉等多开进程，并安全处理进程路径读取和设备枚举失败。
+
+### 解决方案
+
+新增进程路径解析、Core Audio 会话源、NAudio/WASAPI 提供器和控制器。枚举所有活动播放端点，按会话标识生成键，静音操作重新定位会话；单个设备或会话异常只记录警告，不终止整个扫描。
+
+### 修改明细
+
+| 文件 | 改动点 | 改动类型 | 说明 |
+|---|---|---|---|
+| `src/ChatDND.Core/Logging/ILog.cs` | 日志接口 | 新功能 | 为音频层和后续配置层提供统一日志入口 |
+| `src/ChatDND.Core/Interop/ProcessPathResolver.cs` | 进程路径解析 | 新功能 | 使用 `QueryFullProcessImageName` 读取进程可执行文件路径 |
+| `src/ChatDND.Core/Audio/ICoreAudioSessionSource.cs` | 音频源接口 | 新功能 | 抽象真实 NAudio 源和测试源 |
+| `src/ChatDND.Core/Audio/CoreAudioSessionData.cs` | 音频源数据 | 新功能 | 保存会话键、进程路径、静音状态和播放状态 |
+| `src/ChatDND.Core/Audio/CoreAudioSessionMapper.cs` | 快照映射 | 新功能 | 将音频源数据映射为核心快照 |
+| `src/ChatDND.Core/Audio/NaudioCoreAudioSessionSource.cs` | WASAPI 适配器 | 新功能 | 枚举活动播放端点、读取会话并设置静音 |
+| `src/ChatDND.Core/Audio/WasapiAudioSessionProvider.cs` | 会话提供器 | 新功能 | 将 Core Audio 映射为协调器接口 |
+| `src/ChatDND.Core/Audio/WasapiAudioSessionController.cs` | 会话控制器 | 新功能 | 通过会话键设置静音 |
+| `tests/ChatDND.Core.Tests/Audio/*` | 适配器测试 | 测试 | 覆盖映射、提供器和控制器委托 |
+| `tests/ChatDND.Core.Tests/Interop/ProcessPathResolverTests.cs` | 路径测试 | 测试 | 验证当前进程路径解析 |
+
+### 验证方法
+
+运行聚焦的 `CoreAudioSessionMapper`、`ProcessPathResolver` 和 `WasapiAudioSessionAdapter` 测试，再运行 `dotnet test ChatDND.sln`。
+
+### 预期效果和潜在风险
+
+核心流程已经接入真实音频会话枚举和静音接口。NAudio 2.2.1 的会话集合不实现 `IDisposable`，枚举器仍需释放；受保护会话或设备切换仍可能返回空路径或失败，需要真实设备验证。
+
+## 2026-09-23 - 新功能 - 修改人：Codex
+
+### 问题描述
+
 程序异常退出后，之前被工具静音的会话需要在下一次启动时安全恢复，且恢复失败不能再丢失记录。
 
 ### 解决方案

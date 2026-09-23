@@ -1678,6 +1678,7 @@ using ChatDND.Core.Interop;
 using ChatDND.Core.Logging;
 using ChatDND.Core.Models;
 using NAudio.CoreAudioApi;
+using NAudio.CoreAudioApi.Interfaces;
 
 namespace ChatDND.Core.Audio;
 
@@ -1694,7 +1695,7 @@ public sealed class NaudioCoreAudioSessionSource : ICoreAudioSessionSource
     {
         var result = new List<CoreAudioSessionData>();
         using var enumerator = new MMDeviceEnumerator();
-        using var devices = enumerator.EnumerateAudioEndPoints(
+        var devices = enumerator.EnumerateAudioEndPoints(
             DataFlow.Render,
             DeviceState.Active);
 
@@ -1735,7 +1736,7 @@ public sealed class NaudioCoreAudioSessionSource : ICoreAudioSessionSource
     public bool TrySetMute(SessionKey sessionKey, bool muted)
     {
         using var enumerator = new MMDeviceEnumerator();
-        using var devices = enumerator.EnumerateAudioEndPoints(
+        var devices = enumerator.EnumerateAudioEndPoints(
             DataFlow.Render,
             DeviceState.Active);
 
@@ -1774,8 +1775,8 @@ public sealed class NaudioCoreAudioSessionSource : ICoreAudioSessionSource
     {
         return state switch
         {
-            AudioSessionState.Active => SessionPlaybackState.Active,
-            AudioSessionState.Expired => SessionPlaybackState.Expired,
+            AudioSessionState.AudioSessionStateActive => SessionPlaybackState.Active,
+            AudioSessionState.AudioSessionStateExpired => SessionPlaybackState.Expired,
             _ => SessionPlaybackState.Inactive
         };
     }
