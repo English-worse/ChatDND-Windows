@@ -6,7 +6,9 @@ public static class ProcessPathNormalizer
     {
         if (!TryNormalize(path, out var normalized))
         {
-            throw new ArgumentException("Process path is empty.", nameof(path));
+            throw new ArgumentException(
+                "Process path must be a rooted, valid path.",
+                nameof(path));
         }
 
         return normalized;
@@ -28,7 +30,12 @@ public static class ProcessPathNormalizer
 
         try
         {
-            normalized = Path.GetFullPath(trimmed).ToUpperInvariant();
+            if (!Path.IsPathRooted(trimmed))
+            {
+                return false;
+            }
+
+            normalized = Path.GetFullPath(trimmed);
             return true;
         }
         catch (Exception exception) when (

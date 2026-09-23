@@ -1,5 +1,36 @@
 # 修改记录
 
+## 2026-09-23 - Bug修复 - 严重程度：中 - 修改人：Codex
+
+### 问题描述
+
+应用规则匹配器无法按裸文件名回退：`ProcessPathNormalizer.TryNormalize` 会把 `WeChat.exe` 解析成当前目录下的完整路径，导致完整路径不可用时的文件名匹配分支失效。另有异常信息不准确、大小写折叠比较不稳和空集合缺少防御的问题。
+
+### 根因分析
+
+路径规范化只调用 `Path.GetFullPath`，没有先验证输入是否为根路径；匹配器使用 `ToUpperInvariant` 后再做普通相等比较，未统一使用 Windows 路径的序数忽略大小写规则；对 `null` 规则集合和空路径集合没有防御。
+
+### 解决方案
+
+只规范化根路径，裸文件名返回失败并进入文件名回退；路径比较改用 `StringComparison.OrdinalIgnoreCase`；补充空路径、空规则集合和空可执行路径的测试与防御；修正无效路径异常消息。
+
+### 修改明细
+
+| 文件 | 改动点 | 改动类型 | 说明 |
+|---|---|---|---|
+| `src/ChatDND.Core/Matching/ProcessPathNormalizer.cs` | 路径规范化和异常 | Bug修复 | 拒绝非根路径，保留原始大小写，修正异常消息 |
+| `src/ChatDND.Core/Matching/AppRuleMatcher.cs` | 规则匹配 | Bug修复 | 支持裸文件名回退，使用序数忽略大小写比较，增加空值防御 |
+| `tests/ChatDND.Core.Tests/Matching/ProcessPathNormalizerTests.cs` | 路径测试 | 测试 | 增加裸文件名和异常消息覆盖，更新大小写预期 |
+| `tests/ChatDND.Core.Tests/Matching/AppRuleMatcherTests.cs` | 匹配测试 | 测试 | 增加裸文件名、空路径、空规则和空路径集合覆盖 |
+
+### 验证方法
+
+运行 `dotnet test tests/ChatDND.Core.Tests/ChatDND.Core.Tests.csproj --filter FullyQualifiedName~Matching`，随后运行 `dotnet test ChatDND.sln`。
+
+### 预期效果和潜在风险
+
+完整路径不可读取时仍可按显式配置的文件名匹配规则，降低静默漏匹配风险。裸文件名可能匹配多个同名的显式规则，因此规则仍应优先使用完整路径。
+
 ## 2026-09-23 - 新功能 - 修改人：Codex
 
 ### 问题描述

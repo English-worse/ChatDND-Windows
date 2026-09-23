@@ -219,7 +219,7 @@ public sealed class ProcessPathNormalizerTests
     {
         var result = ProcessPathNormalizer.Normalize(input);
 
-        Assert.Equal(@"C:\PROGRAM FILES\TENCENT\WECHAT\WECHAT.EXE", result);
+        Assert.Equal(@"C:\Program Files\Tencent\WeChat\WeChat.exe", result);
     }
 
     [Fact]
@@ -236,6 +236,17 @@ public sealed class ProcessPathNormalizerTests
     {
         var result = ProcessPathNormalizer.TryNormalize(
             "C:\\invalid\0path.exe",
+            out var normalized);
+
+        Assert.False(result);
+        Assert.Equal(string.Empty, normalized);
+    }
+
+    [Fact]
+    public void TryNormalize_ReturnsFalseForBareFilename()
+    {
+        var result = ProcessPathNormalizer.TryNormalize(
+            "WeChat.exe",
             out var normalized);
 
         Assert.False(result);
@@ -270,6 +281,14 @@ public sealed class AppRuleMatcherTests
     }
 
     [Fact]
+    public void Match_MatchesBareFilenameAgainstConfiguredRule()
+    {
+        var result = AppRuleMatcher.Match("WeChat.exe", [WeChat]);
+
+        Assert.Same(WeChat, result);
+    }
+
+    [Fact]
     public void Match_DoesNotMatchAnotherApplicationWithSameFilename()
     {
         var result = AppRuleMatcher.Match(
@@ -297,6 +316,14 @@ public sealed class AppRuleMatcherTests
         var result = AppRuleMatcher.Match(
             @"C:\Program Files\Common Files\SharedAudio.exe",
             [WeChat]);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Match_ReturnsNullForNullRules()
+    {
+        var result = AppRuleMatcher.Match("WeChat.exe", null);
 
         Assert.Null(result);
     }
@@ -374,7 +401,9 @@ public static class ProcessPathNormalizer
     {
         if (!TryNormalize(path, out var normalized))
         {
-            throw new ArgumentException("Process path is empty.", nameof(path));
+            throw new ArgumentException(
+                "Process path must be a rooted, valid path.",
+                nameof(path));
         }
 
         return normalized;
@@ -396,7 +425,12 @@ public static class ProcessPathNormalizer
 
         try
         {
-            normalized = Path.GetFullPath(trimmed).ToUpperInvariant();
+            if (!Path.IsPathRooted(trimmed))
+            {
+                return false;
+            }
+
+            normalized = Path.GetFullPath(trimmed);
             return true;
         }
         catch (Exception exception) when (
@@ -420,27 +454,43 @@ namespace ChatDND.Core.Matching;
 
 public static class AppRuleMatcher
 {
-    public static AppRule? Match(string processPath, IEnumerable<AppRule> rules)
+    public static AppRule? Match(
+        string? processPath,
+        IEnumerable<AppRule>? rules)
     {
+        if (string.IsNullOrWhiteSpace(processPath) || rules is null)
+        {
+            return null;
+        }
+
         var processPathNormalized = ProcessPathNormalizer.TryNormalize(
             processPath,
             out var normalizedPath);
+        var processFileName = GetFileName(processPath);
 
-        foreach (var rule in rules.Where(rule => rule.Enabled))
+        foreach (var rule in rules.Where(rule => rule is { Enabled: true }))
         {
+            if (rule.ExecutablePaths is null || rule.ExecutablePaths.Count == 0)
+            {
+                continue;
+            }
+
             foreach (var candidatePath in rule.ExecutablePaths)
             {
                 if (processPathNormalized
                     && ProcessPathNormalizer.TryNormalize(candidatePath, out var normalizedRulePath)
-                    && normalizedPath == normalizedRulePath)
+                    && string.Equals(
+                        normalizedPath,
+                        normalizedRulePath,
+                        StringComparison.OrdinalIgnoreCase))
                 {
                     return rule;
                 }
 
                 if (!processPathNormalized
                     && string.Equals(
-                        Path.GetFileName(processPath),
-                        Path.GetFileName(candidatePath),
+                        processFileName,
+                        GetFileName(candidatePath),
                         StringComparison.OrdinalIgnoreCase))
                 {
                     return rule;
@@ -449,6 +499,21 @@ public static class AppRuleMatcher
         }
 
         return null;
+    }
+
+    private static string? GetFileName(string path)
+    {
+        try
+        {
+            return Path.GetFileName(path);
+        }
+        catch (Exception exception) when (
+            exception is ArgumentException
+            or NotSupportedException
+            or PathTooLongException)
+        {
+            return null;
+        }
     }
 }
 ```

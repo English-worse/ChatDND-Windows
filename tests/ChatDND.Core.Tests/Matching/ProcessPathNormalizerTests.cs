@@ -11,7 +11,7 @@ public sealed class ProcessPathNormalizerTests
     {
         var result = ProcessPathNormalizer.Normalize(input);
 
-        Assert.Equal(@"C:\PROGRAM FILES\TENCENT\WECHAT\WECHAT.EXE", result);
+        Assert.Equal(@"C:\Program Files\Tencent\WeChat\WeChat.exe", result);
     }
 
     [Fact]
@@ -32,5 +32,25 @@ public sealed class ProcessPathNormalizerTests
 
         Assert.False(result);
         Assert.Equal(string.Empty, normalized);
+    }
+
+    [Fact]
+    public void TryNormalize_ReturnsFalseForBareFilename()
+    {
+        var result = ProcessPathNormalizer.TryNormalize(
+            "WeChat.exe",
+            out var normalized);
+
+        Assert.False(result);
+        Assert.Equal(string.Empty, normalized);
+    }
+
+    [Fact]
+    public void Normalize_ThrowsForBareFilename()
+    {
+        var exception = Assert.Throws<ArgumentException>(
+            () => ProcessPathNormalizer.Normalize("WeChat.exe"));
+
+        Assert.Contains("rooted", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -21,6 +21,16 @@ public sealed class AppRuleMatcherTests
     }
 
     [Fact]
+    public void Match_MatchesBareFilenameAgainstConfiguredRule()
+    {
+        var result = AppRuleMatcher.Match(
+            "WeChat.exe",
+            [WeChat]);
+
+        Assert.Same(WeChat, result);
+    }
+
+    [Fact]
     public void Match_DoesNotMatchAnotherApplicationWithSameFilename()
     {
         var result = AppRuleMatcher.Match(
@@ -48,6 +58,54 @@ public sealed class AppRuleMatcherTests
         var result = AppRuleMatcher.Match(
             @"C:\Program Files\Common Files\SharedAudio.exe",
             [WeChat]);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Match_ReturnsNullForNullProcessPath()
+    {
+        var result = AppRuleMatcher.Match(null, [WeChat]);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Match_ReturnsNullForWhitespaceProcessPath()
+    {
+        var result = AppRuleMatcher.Match(" ", [WeChat]);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Match_ReturnsNullForNullRules()
+    {
+        var result = AppRuleMatcher.Match("WeChat.exe", null);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Match_ReturnsNullForNullExecutablePaths()
+    {
+        var rule = new AppRule("null-paths", "Null paths", null!);
+
+        var result = AppRuleMatcher.Match(
+            @"C:\Program Files\Tencent\WeChat\WeChat.exe",
+            [rule]);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Match_ReturnsNullForEmptyExecutablePaths()
+    {
+        var rule = new AppRule("empty-paths", "Empty paths", []);
+
+        var result = AppRuleMatcher.Match(
+            @"C:\Program Files\Tencent\WeChat\WeChat.exe",
+            [rule]);
 
         Assert.Null(result);
     }
