@@ -6,10 +6,12 @@
 
 | 项目 | 版本/来源 | 安装位置 | 用途 | 状态 |
 |---|---|---|---|---|
-| .NET SDK | 10.0 GA | `%USERPROFILE%\\.dotnet` | 编译、测试、发布 WinForms 项目 | 待安装 |
-| NAudio | 2.2.1 | NuGet 缓存和项目 `csproj` | Windows Core Audio 会话枚举与静音 | 待还原 |
-| xUnit | 模板生成版本 | NuGet 缓存和测试项目 | 单元测试 | 待还原 |
-| Microsoft.NET.Test.Sdk | 模板生成版本 | NuGet 缓存和测试项目 | 测试宿主 | 待还原 |
+| .NET SDK | 10.0.401 GA，来源 `https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.401/dotnet-sdk-10.0.401-win-x64.zip` | `%USERPROFILE%\\.dotnet` | 编译、测试、发布 WinForms 项目 | 已安装 |
+| NAudio | 2.2.1，来源 NuGet 官方源 | NuGet 缓存和项目 `csproj` | Windows Core Audio 会话枚举与静音 | 已还原 |
+| xUnit | 2.9.3，来源 NuGet 官方源 | NuGet 缓存和测试项目 | 单元测试 | 已还原 |
+| xunit.runner.visualstudio | 3.1.4，来源 NuGet 官方源 | NuGet 缓存和测试项目 | 测试适配器 | 已还原 |
+| Microsoft.NET.Test.Sdk | 17.14.1，来源 NuGet 官方源 | NuGet 缓存和测试项目 | 测试宿主 | 已还原 |
+| coverlet.collector | 6.0.4，来源 NuGet 官方源 | NuGet 缓存和测试项目 | 测试覆盖率收集 | 已还原 |
 
 ## 说明
 
