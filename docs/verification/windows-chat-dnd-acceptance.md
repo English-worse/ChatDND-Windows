@@ -29,7 +29,7 @@
 
 ## 结果记录
 
-- 自动检查结果：Release 测试 44/44 通过，Release 构建 0 警告/0 错误，win-x64 framework-dependent 发布成功，发布程序启动存活，10 秒空闲工作集 49.37-49.42 MB，平均 49.395 MB。
+- 自动检查结果：Release 测试 55/55 通过，Release 构建 0 警告/0 错误，win-x64 framework-dependent 发布成功，发布程序启动存活且 `Responding=True`，10 秒空闲工作集 51.43-51.46 MB，平均 51.439 MB。
 - 手工检查环境：
 - 内存测量结果：
 - 遗留问题：

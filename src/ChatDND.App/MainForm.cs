@@ -36,6 +36,7 @@ public sealed class MainForm : Form
             Padding = new Padding(0, 8, 0, 8)
         };
         RefreshRules();
+        _controller.StateChanged += OnControllerStateChanged;
 
         var addCurrent = new Button
         {
@@ -133,7 +134,6 @@ public sealed class MainForm : Form
                     _toggle.Text = UiStrings.EnableDnd;
                 }
 
-                RefreshStatus();
             }
             catch (InvalidOperationException exception)
             {
@@ -167,6 +167,8 @@ public sealed class MainForm : Form
         Controls.Add(buttons);
         Controls.Add(top);
 
+        Shown += (_, _) => RefreshState();
+
         FormClosing += (_, args) =>
         {
             if (args.CloseReason == CloseReason.UserClosing)
@@ -175,6 +177,16 @@ public sealed class MainForm : Form
                 Hide();
             }
         };
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _controller.StateChanged -= OnControllerStateChanged;
+        }
+
+        base.Dispose(disposing);
     }
 
     public void RefreshState()
@@ -200,5 +212,26 @@ public sealed class MainForm : Form
         _status.Text = _controller.IsEnabled
             ? UiStrings.StatusEnabled
             : UiStrings.StatusDisabled;
+    }
+
+    private void OnControllerStateChanged(object? sender, EventArgs args)
+    {
+        if (IsDisposed)
+        {
+            return;
+        }
+
+        if (!IsHandleCreated)
+        {
+            return;
+        }
+
+        if (InvokeRequired)
+        {
+            BeginInvoke((Action)RefreshState);
+            return;
+        }
+
+        RefreshState();
     }
 }

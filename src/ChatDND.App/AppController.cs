@@ -7,13 +7,11 @@ namespace ChatDND.App;
 
 public sealed class AppController : IDisposable
 {
-    private readonly DndCoordinator _coordinator;
-    private readonly RecoveryService _recovery;
     private readonly AppRuleStore _store;
     private readonly ProcessDiscoveryService _discovery;
     private readonly IAdminStartupService _adminStartup;
     private readonly ILog _log;
-    private readonly System.Windows.Forms.Timer _timer;
+    private readonly DndBackgroundWorker _worker;
     private DndSettings _settings;
 
     public AppController(
@@ -24,21 +22,22 @@ public sealed class AppController : IDisposable
         IAdminStartupService adminStartup,
         ILog log)
     {
-        _coordinator = coordinator;
-        _recovery = recovery;
         _store = store;
         _discovery = discovery;
         _adminStartup = adminStartup;
         _log = log;
         _settings = store.Load();
-        _timer = new System.Windows.Forms.Timer
-        {
-            Interval = _settings.ScanIntervalMs
-        };
-        _timer.Tick += (_, _) => _coordinator.Tick(_settings.Rules);
+        _worker = new DndBackgroundWorker(
+            coordinator,
+            recovery,
+            log,
+            _settings.ScanIntervalMs);
+        _worker.StateChanged += (_, _) => StateChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public bool IsEnabled => _coordinator.IsEnabled;
+    public event EventHandler? StateChanged;
+
+    public bool IsEnabled => _worker.IsEnabled;
 
     public DndSettings Settings => _settings;
 
@@ -55,7 +54,8 @@ public sealed class AppController : IDisposable
     public void Start(bool autoEnable)
     {
         _log.Info("ChatDND 启动。");
-        _recovery.Recover();
+        _worker.Start();
+        _worker.Recover();
         if (autoEnable
             && _settings.AutoEnableOnLaunch
             && _settings.Rules.Any(rule => rule.Enabled))
@@ -66,30 +66,22 @@ public sealed class AppController : IDisposable
 
     public void Enable()
     {
-        var result = _coordinator.Enable(_settings.Rules);
-        if (result == DndEnableResult.NoRules)
+        if (!_settings.Rules.Any(rule => rule.Enabled))
         {
             throw new InvalidOperationException(UiStrings.NoRules);
         }
 
-        _timer.Start();
+        _worker.Enable(_settings.Rules);
     }
 
     public void Disable()
     {
-        _timer.Stop();
-        _coordinator.Disable();
+        _worker.Disable();
     }
 
     public bool PrepareForElevation()
     {
-        _timer.Stop();
-        var wasEnabled = _coordinator.IsEnabled;
-        if (wasEnabled)
-        {
-            _coordinator.Disable();
-        }
-
+        var wasEnabled = _worker.StopAndDisable();
         _store.Save(_settings);
         return wasEnabled;
     }
@@ -106,7 +98,7 @@ public sealed class AppController : IDisposable
     {
         _settings = settings;
         _store.Save(settings);
-        _timer.Interval = settings.ScanIntervalMs;
+        _worker.UpdateRules(settings.Rules, settings.ScanIntervalMs);
     }
 
     public void SaveGeneralSettings(
@@ -166,7 +158,7 @@ public sealed class AppController : IDisposable
                 .ToArray()
         });
 
-        if (!_settings.Rules.Any(item => item.Enabled) && _coordinator.IsEnabled)
+        if (!_settings.Rules.Any(item => item.Enabled) && _worker.IsEnabled)
         {
             Disable();
         }
@@ -174,11 +166,6 @@ public sealed class AppController : IDisposable
 
     public void Dispose()
     {
-        _timer.Stop();
-        _timer.Dispose();
-        if (_coordinator.IsEnabled)
-        {
-            _coordinator.Disable();
-        }
+        _worker.Dispose();
     }
 }

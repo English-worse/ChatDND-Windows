@@ -69,7 +69,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         _mainForm?.RefreshState();
     }
 
-    private void Elevate()
+    private async void Elevate()
     {
         var result = MessageBox.Show(
             UiStrings.ElevationRiskBody,
@@ -87,7 +87,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         using var handshake = ElevationHandshake.Create();
         _singleInstance.Release();
         if (_elevationLauncher.TryRestartElevated(resumeDnd, handshake.Token)
-            && handshake.WaitForReady(TimeSpan.FromSeconds(10)))
+            && await handshake.WaitForReadyAsync(TimeSpan.FromSeconds(10)))
         {
             _icon.Visible = false;
             ExitThread();

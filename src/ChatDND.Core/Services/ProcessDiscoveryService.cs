@@ -19,7 +19,7 @@ public sealed class ProcessDiscoveryService
         var candidates = new Dictionary<string, CandidateApp>(
             StringComparer.OrdinalIgnoreCase);
 
-        foreach (var session in _provider.GetSessions())
+        foreach (var session in _provider.Scan().Sessions)
         {
             if (session.Key.ProcessId == currentProcessId
                 || !ProcessPathNormalizer.TryNormalize(

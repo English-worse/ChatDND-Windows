@@ -57,6 +57,11 @@ public sealed class ElevationHandshake : IDisposable
         return _event.WaitOne(timeout);
     }
 
+    public Task<bool> WaitForReadyAsync(TimeSpan timeout)
+    {
+        return Task.Run(() => WaitForReady(timeout));
+    }
+
     public void Dispose()
     {
         _event.Dispose();

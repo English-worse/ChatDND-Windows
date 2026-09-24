@@ -4,7 +4,7 @@ namespace ChatDND.Core.Audio;
 
 public interface ICoreAudioSessionSource
 {
-    IReadOnlyList<CoreAudioSessionData> Enumerate();
+    CoreAudioScanResult Enumerate();
 
     bool TrySetMute(SessionKey sessionKey, bool muted);
 }

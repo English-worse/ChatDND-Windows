@@ -6,7 +6,7 @@ public interface IRecoveryJournal
 {
     IReadOnlyList<RecoveryRecord> Load();
 
-    void Save(IReadOnlyCollection<RecoveryRecord> records);
+    bool TrySave(IReadOnlyCollection<RecoveryRecord> records);
 
-    void Clear();
+    bool TryClear();
 }

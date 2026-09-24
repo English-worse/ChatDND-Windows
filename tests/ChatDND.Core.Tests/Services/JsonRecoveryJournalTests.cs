@@ -1,5 +1,6 @@
 using ChatDND.Core.Models;
 using ChatDND.Core.Services;
+using ChatDND.Core.Tests.Services.Fakes;
 
 namespace ChatDND.Core.Tests.Services;
 
@@ -10,16 +11,18 @@ public sealed class JsonRecoveryJournalTests
     {
         var directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
-        var journal = new JsonRecoveryJournal(Path.Combine(directory, "recovery.json"));
+        var journal = new JsonRecoveryJournal(
+            Path.Combine(directory, "recovery.json"),
+            new FakeLog());
         var record = new RecoveryRecord(
             new SessionKey("session", "instance", 42),
             @"C:\Apps\Chat.exe",
             OriginalMute: false,
             MutedByTool: true);
 
-        journal.Save([record]);
+        Assert.True(journal.TrySave([record]));
         var loaded = journal.Load();
-        journal.Clear();
+        Assert.True(journal.TryClear());
 
         Assert.Single(loaded);
         Assert.False(loaded[0].OriginalMute);
@@ -33,11 +36,34 @@ public sealed class JsonRecoveryJournalTests
         Directory.CreateDirectory(directory);
         var path = Path.Combine(directory, "recovery.json");
         File.WriteAllText(path, "{ broken json");
-        var journal = new JsonRecoveryJournal(path);
+        var journal = new JsonRecoveryJournal(path, new FakeLog());
 
         var loaded = journal.Load();
 
         Assert.Empty(loaded);
         Assert.True(Directory.GetFiles(directory, "recovery.json.corrupt-*").Length == 1);
+    }
+
+    [Fact]
+    public void TrySave_WhenDirectoryCannotBeCreated_ReturnsFalseAndLogs()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var blockedDirectory = Path.Combine(directory, "blocked");
+        File.WriteAllText(blockedDirectory, "not a directory");
+        var log = new FakeLog();
+        var journal = new JsonRecoveryJournal(
+            Path.Combine(blockedDirectory, "recovery.json"),
+            log);
+        var record = new RecoveryRecord(
+            new SessionKey("session", "instance", 42),
+            @"C:\Apps\Chat.exe",
+            OriginalMute: false,
+            MutedByTool: true);
+
+        var saved = journal.TrySave([record]);
+
+        Assert.False(saved);
+        Assert.Contains(log.Messages, message => message.StartsWith("ERROR:"));
     }
 }

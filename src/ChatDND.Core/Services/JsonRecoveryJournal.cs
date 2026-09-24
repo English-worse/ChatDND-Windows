@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ChatDND.Core.Logging;
 using ChatDND.Core.Models;
 
 namespace ChatDND.Core.Services;
@@ -12,10 +13,12 @@ public sealed class JsonRecoveryJournal : IRecoveryJournal
     };
 
     private readonly string _path;
+    private readonly ILog _log;
 
-    public JsonRecoveryJournal(string path)
+    public JsonRecoveryJournal(string path, ILog log)
     {
         _path = path;
+        _log = log;
     }
 
     public IReadOnlyList<RecoveryRecord> Load()
@@ -50,39 +53,37 @@ public sealed class JsonRecoveryJournal : IRecoveryJournal
         }
     }
 
-    public void Save(IReadOnlyCollection<RecoveryRecord> records)
+    public bool TrySave(IReadOnlyCollection<RecoveryRecord> records)
     {
-        var directory = Path.GetDirectoryName(_path)
-            ?? throw new InvalidOperationException("Recovery path has no directory.");
-        Directory.CreateDirectory(directory);
-        var temporaryPath = $"{_path}.tmp";
-
         try
         {
+            var directory = Path.GetDirectoryName(_path);
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                throw new InvalidOperationException("Recovery path has no directory.");
+            }
+
+            Directory.CreateDirectory(directory);
+            var temporaryPath = $"{_path}.tmp";
             File.WriteAllText(
                 temporaryPath,
                 JsonSerializer.Serialize(records, Options));
             File.Move(temporaryPath, _path, overwrite: true);
+            return true;
         }
-        finally
+        catch (Exception exception) when (
+            exception is IOException
+            or UnauthorizedAccessException
+            or InvalidOperationException
+            or JsonException)
         {
-            try
-            {
-                if (File.Exists(temporaryPath))
-                {
-                    File.Delete(temporaryPath);
-                }
-            }
-            catch (IOException)
-            {
-            }
-            catch (UnauthorizedAccessException)
-            {
-            }
+            _log.Error($"写入恢复日志失败：{exception.Message}");
+            CleanupTemporaryFile();
+            return false;
         }
     }
 
-    public void Clear()
+    public bool TryClear()
     {
         try
         {
@@ -90,11 +91,32 @@ public sealed class JsonRecoveryJournal : IRecoveryJournal
             {
                 File.Delete(_path);
             }
+
+            return true;
         }
-        catch (IOException)
+        catch (Exception exception) when (
+            exception is IOException
+            or UnauthorizedAccessException)
         {
+            _log.Error($"清理恢复日志失败：{exception.Message}");
+            return false;
+        }
+    }
+
+    private void CleanupTemporaryFile()
+    {
+        var temporaryPath = $"{_path}.tmp";
+        try
+        {
+            if (File.Exists(temporaryPath))
+            {
+                File.Delete(temporaryPath);
+            }
         }
         catch (UnauthorizedAccessException)
+        {
+        }
+        catch (IOException)
         {
         }
     }

@@ -108,6 +108,7 @@ public sealed class DndCoordinatorTests
         coordinator.Tick([]);
 
         Assert.False(controller.MuteStates[session.Key]);
+        Assert.False(coordinator.IsEnabled);
         Assert.Empty(journal.Load());
     }
 
@@ -150,6 +151,74 @@ public sealed class DndCoordinatorTests
 
         Assert.Single(journal.Load());
         Assert.True(controller.MuteStates[first.Key]);
+    }
+
+    [Fact]
+    public void Tick_WhenNoChangesOccur_DoesNotRewriteJournal()
+    {
+        var provider = new FakeAudioSessionProvider();
+        var controller = new FakeAudioSessionController { Provider = provider };
+        provider.Sessions.Add(Session(
+            @"C:\Program Files\Tencent\WeChat\WeChat.exe",
+            707));
+        var journal = new FakeRecoveryJournal();
+        var coordinator = new DndCoordinator(provider, controller, journal);
+        coordinator.Enable([WeChat]);
+        var saveCount = journal.SaveCount;
+
+        coordinator.Tick([WeChat]);
+        coordinator.Tick([WeChat]);
+
+        Assert.Equal(saveCount, journal.SaveCount);
+    }
+
+    [Fact]
+    public void Tick_WhenScanIsIncomplete_DoesNotPruneRecoveryRecords()
+    {
+        var provider = new FakeAudioSessionProvider();
+        var controller = new FakeAudioSessionController { Provider = provider };
+        var session = Session(
+            @"C:\Program Files\Tencent\WeChat\WeChat.exe",
+            808);
+        provider.Sessions.Add(session);
+        var journal = new FakeRecoveryJournal();
+        var coordinator = new DndCoordinator(provider, controller, journal);
+        coordinator.Enable([WeChat]);
+        provider.Sessions.Clear();
+        provider.IsComplete = false;
+        provider.ErrorMessage = "枚举失败";
+
+        coordinator.Tick([WeChat]);
+
+        Assert.Single(journal.Load());
+        Assert.True(coordinator.IsEnabled);
+    }
+
+    [Fact]
+    public void Tick_AfterJournalWriteFailure_RetriesAfterDelay()
+    {
+        var now = new DateTimeOffset(2026, 9, 24, 0, 0, 0, TimeSpan.Zero);
+        var provider = new FakeAudioSessionProvider();
+        var controller = new FakeAudioSessionController { Provider = provider };
+        provider.Sessions.Add(Session(
+            @"C:\Program Files\Tencent\WeChat\WeChat.exe",
+            911));
+        var journal = new FakeRecoveryJournal { FailSave = true };
+        var coordinator = new DndCoordinator(
+            provider,
+            controller,
+            journal,
+            utcNow: () => now);
+        coordinator.Enable([WeChat]);
+        var failedWrites = journal.SaveCount;
+
+        journal.FailSave = false;
+        now = now.AddSeconds(6);
+        coordinator.Tick([WeChat]);
+
+        Assert.True(failedWrites > 0);
+        Assert.True(journal.SaveCount > failedWrites);
+        Assert.Single(journal.Load());
     }
 
     private static AudioSessionSnapshot Session(

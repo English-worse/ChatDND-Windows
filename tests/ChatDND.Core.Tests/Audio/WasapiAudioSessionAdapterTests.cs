@@ -18,10 +18,11 @@ public sealed class WasapiAudioSessionAdapterTests
         };
         var provider = new WasapiAudioSessionProvider(source);
 
-        var snapshots = provider.GetSessions();
+        var result = provider.Scan();
 
-        Assert.Equal(2, snapshots.Count);
-        Assert.Equal([1u, 2u], snapshots.Select(item => item.Key.ProcessId));
+        Assert.True(result.IsComplete);
+        Assert.Equal(2, result.Sessions.Count);
+        Assert.Equal([1u, 2u], result.Sessions.Select(item => item.Key.ProcessId));
     }
 
     [Fact]
@@ -55,9 +56,16 @@ public sealed class WasapiAudioSessionAdapterTests
 
         public bool LastMuteValue { get; private set; }
 
-        public IReadOnlyList<CoreAudioSessionData> Enumerate()
+        public bool IsComplete { get; init; } = true;
+
+        public string? ErrorMessage { get; init; }
+
+        public CoreAudioScanResult Enumerate()
         {
-            return Sessions;
+            return new CoreAudioScanResult(
+                Sessions,
+                IsComplete,
+                ErrorMessage);
         }
 
         public bool TrySetMute(SessionKey sessionKey, bool muted)

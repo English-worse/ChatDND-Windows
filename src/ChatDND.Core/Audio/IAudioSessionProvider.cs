@@ -4,5 +4,5 @@ namespace ChatDND.Core.Audio;
 
 public interface IAudioSessionProvider
 {
-    IReadOnlyList<AudioSessionSnapshot> GetSessions();
+    AudioSessionScanResult Scan();
 }

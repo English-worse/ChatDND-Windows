@@ -24,10 +24,10 @@ internal static class Program
         var source = new NaudioCoreAudioSessionSource(log);
         var provider = new WasapiAudioSessionProvider(source);
         var controller = new WasapiAudioSessionController(source);
-        var journal = new JsonRecoveryJournal(AppPaths.RecoveryPath);
+        var journal = new JsonRecoveryJournal(AppPaths.RecoveryPath, log);
         var store = new AppRuleStore(AppPaths.SettingsPath);
         var coordinator = new DndCoordinator(provider, controller, journal);
-        var recovery = new RecoveryService(provider, controller, journal);
+        var recovery = new RecoveryService(provider, controller, journal, log);
         var discovery = new ProcessDiscoveryService(provider);
         var adminStartup = new WindowsAdminStartupService();
         var appController = new AppController(

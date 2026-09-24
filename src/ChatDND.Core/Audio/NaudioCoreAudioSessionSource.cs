@@ -16,9 +16,11 @@ public sealed class NaudioCoreAudioSessionSource : ICoreAudioSessionSource
         _log = log;
     }
 
-    public IReadOnlyList<CoreAudioSessionData> Enumerate()
+    public CoreAudioScanResult Enumerate()
     {
         var result = new List<CoreAudioSessionData>();
+        var isComplete = true;
+        string? errorMessage = null;
 
         try
         {
@@ -36,22 +38,33 @@ public sealed class NaudioCoreAudioSessionSource : ICoreAudioSessionSource
                         var sessions = device.AudioSessionManager.Sessions;
                         for (var index = 0; index < sessions.Count; index++)
                         {
-                            ReadSession(sessions[index], result);
+                            if (!ReadSession(
+                                sessions[index],
+                                result,
+                                out var sessionError))
+                            {
+                                isComplete = false;
+                                errorMessage ??= sessionError;
+                            }
                         }
                     }
                 }
                 catch (Exception exception)
                 {
+                    isComplete = false;
+                    errorMessage ??= exception.Message;
                     _log.Warn($"读取音频端点失败：{exception.Message}");
                 }
             }
         }
         catch (Exception exception)
         {
+            isComplete = false;
+            errorMessage ??= exception.Message;
             _log.Warn($"枚举音频端点失败：{exception.Message}");
         }
 
-        return result;
+        return new CoreAudioScanResult(result, isComplete, errorMessage);
     }
 
     public bool TrySetMute(SessionKey sessionKey, bool muted)
@@ -100,10 +113,12 @@ public sealed class NaudioCoreAudioSessionSource : ICoreAudioSessionSource
         return false;
     }
 
-    private void ReadSession(
+    private bool ReadSession(
         AudioSessionControl session,
-        ICollection<CoreAudioSessionData> result)
+        ICollection<CoreAudioSessionData> result,
+        out string? errorMessage)
     {
+        errorMessage = null;
         try
         {
             using var sessionScope = session;
@@ -111,7 +126,7 @@ public sealed class NaudioCoreAudioSessionSource : ICoreAudioSessionSource
             var state = MapState(session.State);
             if (state == SessionPlaybackState.Expired)
             {
-                return;
+                return true;
             }
 
             var processId = session.GetProcessID;
@@ -124,10 +139,13 @@ public sealed class NaudioCoreAudioSessionSource : ICoreAudioSessionSource
                 ResolveProcessPath(processId),
                 volume.Mute,
                 state));
+            return true;
         }
         catch (Exception exception)
         {
+            errorMessage = exception.Message;
             _log.Warn($"读取音频会话失败：{exception.Message}");
+            return false;
         }
     }
 

@@ -11,10 +11,14 @@ public sealed class WasapiAudioSessionProvider : IAudioSessionProvider
         _source = source;
     }
 
-    public IReadOnlyList<AudioSessionSnapshot> GetSessions()
+    public AudioSessionScanResult Scan()
     {
-        return _source.Enumerate()
-            .Select(CoreAudioSessionMapper.ToSnapshot)
-            .ToArray();
+        var result = _source.Enumerate();
+        return new AudioSessionScanResult(
+            result.Sessions
+                .Select(CoreAudioSessionMapper.ToSnapshot)
+                .ToArray(),
+            result.IsComplete,
+            result.ErrorMessage);
     }
 }
