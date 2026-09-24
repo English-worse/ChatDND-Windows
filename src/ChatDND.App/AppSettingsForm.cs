@@ -14,6 +14,7 @@ public sealed class AppSettingsForm : Form
     {
         _controller = controller;
         Text = UiStrings.SettingsTitle;
+        Icon = IconFactory.LoadAppIcon();
         StartPosition = FormStartPosition.CenterParent;
         Width = 560;
         Height = 360;

@@ -9,6 +9,7 @@ public sealed class SettingsForm : Form
     public SettingsForm(IReadOnlyList<CandidateApp> candidates)
     {
         Text = UiStrings.FirstRunTitle;
+        Icon = IconFactory.LoadAppIcon();
         StartPosition = FormStartPosition.CenterParent;
         Width = 560;
         Height = 360;

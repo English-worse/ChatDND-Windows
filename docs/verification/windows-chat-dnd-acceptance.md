@@ -29,7 +29,7 @@
 
 ## 结果记录
 
-- 自动检查结果：Release 测试 62/62 通过，Release 构建 0 警告/0 错误，win-x64 framework-dependent 发布成功，发布程序启动存活且 `Responding=True`。
+- 自动检查结果：Release 测试 63/63 通过，Release 构建 0 警告/0 错误，win-x64 framework-dependent 发布成功，发布程序启动存活且 `Responding=True`，ICO 包含 16-256 像素且发布 EXE 已嵌入图标。
 - 手工检查环境：
 - 内存测量结果：
 - 遗留问题：

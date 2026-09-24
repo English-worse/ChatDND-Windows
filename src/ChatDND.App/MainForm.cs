@@ -15,6 +15,7 @@ public sealed class MainForm : Form
     {
         _controller = controller;
         Text = UiStrings.AppTitle;
+        Icon = IconFactory.LoadAppIcon();
         StartPosition = FormStartPosition.CenterScreen;
         Width = 720;
         Height = 460;

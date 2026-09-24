@@ -23,7 +23,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         _isElevated = isElevated;
         _icon = new NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = IconFactory.LoadAppIcon(),
             Text = UiStrings.AppTitle,
             Visible = true
         };

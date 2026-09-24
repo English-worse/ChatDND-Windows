@@ -15,6 +15,13 @@
     <Description>Windows 应用级免打扰工具</Description>
     <Company>ChatDND</Company>
     <Version>0.1.0</Version>
+    <ApplicationIcon>Assets\ChatDND.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\ChatDND.ico">
+      <LogicalName>ChatDND.App.Assets.ChatDND.ico</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
 
 </Project>
