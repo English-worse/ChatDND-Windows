@@ -1,4 +1,5 @@
 using ChatDND.Core.Models;
+using ChatDND.Core.Services;
 
 namespace ChatDND.App;
 
@@ -57,10 +58,13 @@ public sealed class MainForm : Form
             }
 
             using var picker = new SettingsForm(discovered);
-            if (picker.ShowDialog(this) == DialogResult.OK
-                && picker.SelectedCandidate is not null)
+            if (picker.ShowDialog(this) == DialogResult.OK)
             {
-                _controller.AddRule(picker.SelectedCandidate);
+                foreach (var candidate in picker.SelectedCandidates)
+                {
+                    _controller.AddRule(candidate);
+                }
+
                 RefreshRules();
             }
         };
@@ -79,9 +83,10 @@ public sealed class MainForm : Form
             };
             if (dialog.ShowDialog(this) == DialogResult.OK)
             {
+                var resolved = new KnownApplicationNameResolver().Resolve(dialog.FileName);
                 _controller.AddRule(
                     dialog.FileName,
-                    Path.GetFileNameWithoutExtension(dialog.FileName));
+                    resolved.DisplayName);
                 RefreshRules();
             }
         };

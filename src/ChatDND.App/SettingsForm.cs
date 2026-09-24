@@ -4,7 +4,7 @@ namespace ChatDND.App;
 
 public sealed class SettingsForm : Form
 {
-    private readonly ListBox _candidates;
+    private readonly CheckedListBox _candidates;
 
     public SettingsForm(IReadOnlyList<CandidateApp> candidates)
     {
@@ -12,16 +12,24 @@ public sealed class SettingsForm : Form
         StartPosition = FormStartPosition.CenterParent;
         Width = 560;
         Height = 360;
-        _candidates = new ListBox
+        _candidates = new CheckedListBox
         {
             Dock = DockStyle.Fill,
-            DisplayMember = nameof(CandidateApp.DisplayName)
+            DisplayMember = nameof(CandidateApp.DisplayText),
+            CheckOnClick = true
         };
-        _candidates.Items.AddRange(candidates.ToArray());
+        foreach (var candidate in candidates)
+        {
+            var index = _candidates.Items.Add(candidate);
+            if (candidate.IsKnown)
+            {
+                _candidates.SetItemChecked(index, true);
+            }
+        }
 
         var description = new Label
         {
-            Text = UiStrings.FirstRunDescription,
+            Text = $"{UiStrings.FirstRunDescription}{Environment.NewLine}{UiStrings.FirstRunAutoDetectionHint}",
             Dock = DockStyle.Top,
             AutoSize = true,
             Padding = new Padding(8)
@@ -52,5 +60,8 @@ public sealed class SettingsForm : Form
         CancelButton = cancel;
     }
 
-    public CandidateApp? SelectedCandidate => _candidates.SelectedItem as CandidateApp;
+    public IReadOnlyList<CandidateApp> SelectedCandidates =>
+        _candidates.CheckedItems
+            .Cast<CandidateApp>()
+            .ToArray();
 }

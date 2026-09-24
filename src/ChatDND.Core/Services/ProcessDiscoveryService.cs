@@ -7,10 +7,14 @@ namespace ChatDND.Core.Services;
 public sealed class ProcessDiscoveryService
 {
     private readonly IAudioSessionProvider _provider;
+    private readonly KnownApplicationNameResolver _nameResolver;
 
-    public ProcessDiscoveryService(IAudioSessionProvider provider)
+    public ProcessDiscoveryService(
+        IAudioSessionProvider provider,
+        KnownApplicationNameResolver? nameResolver = null)
     {
         _provider = provider;
+        _nameResolver = nameResolver ?? new KnownApplicationNameResolver();
     }
 
     public IReadOnlyList<CandidateApp> Discover()
@@ -31,11 +35,11 @@ public sealed class ProcessDiscoveryService
 
             if (!candidates.ContainsKey(normalizedPath))
             {
-                var displayName = Path.GetFileNameWithoutExtension(
-                    session.ProcessPath.Trim().Trim('"'));
+                var resolved = _nameResolver.Resolve(session.ProcessPath);
                 candidates[normalizedPath] = new CandidateApp(
-                    displayName,
-                    session.ProcessPath);
+                    resolved.DisplayName,
+                    session.ProcessPath,
+                    resolved.IsKnown);
             }
         }
 

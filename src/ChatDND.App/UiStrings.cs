@@ -24,6 +24,7 @@ public static class UiStrings
     public const string ExitApplication = "退出程序";
     public const string FirstRunTitle = "第一次使用 ChatDND";
     public const string FirstRunDescription = "请选择需要免打扰的应用，程序只会静音它们的 Windows 音频会话。";
+    public const string FirstRunAutoDetectionHint = "已自动识别并勾选常见聊天应用，你可以按需调整。";
     public const string ElevationRiskTitle = "管理员模式风险说明";
     public const string ElevationRiskBody =
         "管理员权限会扩大程序影响范围；如果程序存在漏洞或被替换，影响可能扩大到系统级操作。\n" +

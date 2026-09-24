@@ -23,10 +23,13 @@ public sealed class ProcessDiscoveryServiceTests
         Assert.Equal(2, candidates.Count);
         Assert.Contains(
             candidates,
-            item => item.DisplayName.Equals("WeChat", StringComparison.OrdinalIgnoreCase));
+            item => item.DisplayName == "微信" && item.IsKnown);
         Assert.Contains(
             candidates,
-            item => item.DisplayName.Equals("DingTalk", StringComparison.OrdinalIgnoreCase));
+            item => item.DisplayName == "钉钉" && item.IsKnown);
+        Assert.Contains(
+            candidates,
+            item => item.DisplayText.StartsWith("微信", StringComparison.Ordinal));
     }
 
     private static AudioSessionSnapshot Session(string path, uint pid)
