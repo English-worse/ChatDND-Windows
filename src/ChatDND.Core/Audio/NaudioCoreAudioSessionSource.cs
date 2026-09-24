@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ChatDND.Core.Interop;
 using ChatDND.Core.Logging;
 using ChatDND.Core.Models;
@@ -18,40 +19,36 @@ public sealed class NaudioCoreAudioSessionSource : ICoreAudioSessionSource
     public IReadOnlyList<CoreAudioSessionData> Enumerate()
     {
         var result = new List<CoreAudioSessionData>();
-        using var enumerator = new MMDeviceEnumerator();
-        var devices = enumerator.EnumerateAudioEndPoints(
-            DataFlow.Render,
-            DeviceState.Active);
 
         try
         {
+            using var enumerator = new MMDeviceEnumerator();
+            var devices = enumerator.EnumerateAudioEndPoints(
+                DataFlow.Render,
+                DeviceState.Active);
+
             foreach (var device in devices)
             {
-                using (device)
+                try
                 {
-                    var sessions = device.AudioSessionManager.Sessions;
-                    for (var index = 0; index < sessions.Count; index++)
+                    using (device)
                     {
-                        var session = sessions[index];
-                        var processId = session.GetProcessID;
-                        var processPath = ProcessPathResolver.TryResolve(processId)
-                            ?? $"PID:{processId}";
-                        var key = new SessionKey(
-                            session.GetSessionIdentifier,
-                            session.GetSessionInstanceIdentifier,
-                            processId);
-                        result.Add(new CoreAudioSessionData(
-                            key,
-                            processPath,
-                            session.SimpleAudioVolume.Mute,
-                            MapState(session.State)));
+                        var sessions = device.AudioSessionManager.Sessions;
+                        for (var index = 0; index < sessions.Count; index++)
+                        {
+                            ReadSession(sessions[index], result);
+                        }
                     }
+                }
+                catch (Exception exception)
+                {
+                    _log.Warn($"读取音频端点失败：{exception.Message}");
                 }
             }
         }
         catch (Exception exception)
         {
-            _log.Warn($"枚举音频会话失败：{exception.Message}");
+            _log.Warn($"枚举音频端点失败：{exception.Message}");
         }
 
         return result;
@@ -59,40 +56,98 @@ public sealed class NaudioCoreAudioSessionSource : ICoreAudioSessionSource
 
     public bool TrySetMute(SessionKey sessionKey, bool muted)
     {
-        using var enumerator = new MMDeviceEnumerator();
-        var devices = enumerator.EnumerateAudioEndPoints(
-            DataFlow.Render,
-            DeviceState.Active);
-
         try
         {
+            using var enumerator = new MMDeviceEnumerator();
+            var devices = enumerator.EnumerateAudioEndPoints(
+                DataFlow.Render,
+                DeviceState.Active);
+
             foreach (var device in devices)
             {
-                using (device)
+                try
                 {
-                    var sessions = device.AudioSessionManager.Sessions;
-                    for (var index = 0; index < sessions.Count; index++)
+                    using (device)
                     {
-                        var session = sessions[index];
-                        var key = new SessionKey(
-                            session.GetSessionIdentifier,
-                            session.GetSessionInstanceIdentifier,
-                            session.GetProcessID);
-                        if (key == sessionKey)
+                        var sessions = device.AudioSessionManager.Sessions;
+                        for (var index = 0; index < sessions.Count; index++)
                         {
-                            session.SimpleAudioVolume.Mute = muted;
-                            return true;
+                            using var session = sessions[index];
+                            using var volume = session.SimpleAudioVolume;
+                            var key = new SessionKey(
+                                session.GetSessionIdentifier,
+                                session.GetSessionInstanceIdentifier,
+                                session.GetProcessID);
+                            if (key == sessionKey)
+                            {
+                                volume.Mute = muted;
+                                return true;
+                            }
                         }
                     }
+                }
+                catch (Exception exception)
+                {
+                    _log.Warn($"修改音频端点会话失败：{exception.Message}");
                 }
             }
         }
         catch (Exception exception)
         {
-            _log.Warn($"修改音频会话失败：{exception.Message}");
+            _log.Warn($"枚举音频端点失败：{exception.Message}");
         }
 
         return false;
+    }
+
+    private void ReadSession(
+        AudioSessionControl session,
+        ICollection<CoreAudioSessionData> result)
+    {
+        try
+        {
+            using var sessionScope = session;
+            using var volume = session.SimpleAudioVolume;
+            var state = MapState(session.State);
+            if (state == SessionPlaybackState.Expired)
+            {
+                return;
+            }
+
+            var processId = session.GetProcessID;
+            var key = new SessionKey(
+                session.GetSessionIdentifier,
+                session.GetSessionInstanceIdentifier,
+                processId);
+            result.Add(new CoreAudioSessionData(
+                key,
+                ResolveProcessPath(processId),
+                volume.Mute,
+                state));
+        }
+        catch (Exception exception)
+        {
+            _log.Warn($"读取音频会话失败：{exception.Message}");
+        }
+    }
+
+    private static string ResolveProcessPath(uint processId)
+    {
+        var fullPath = ProcessPathResolver.TryResolve(processId);
+        if (!string.IsNullOrWhiteSpace(fullPath))
+        {
+            return fullPath;
+        }
+
+        try
+        {
+            using var process = Process.GetProcessById((int)processId);
+            return $"{process.ProcessName}.exe";
+        }
+        catch (Exception)
+        {
+            return $"PID:{processId}";
+        }
     }
 
     private static SessionPlaybackState MapState(AudioSessionState state)

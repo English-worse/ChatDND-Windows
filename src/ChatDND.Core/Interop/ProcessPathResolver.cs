@@ -17,7 +17,7 @@ public static class ProcessPathResolver
 
         try
         {
-            var capacity = 4096u;
+            var capacity = 32767u;
             var buffer = new StringBuilder((int)capacity);
             return QueryFullProcessImageName(handle, 0, buffer, ref capacity)
                 ? buffer.ToString()
