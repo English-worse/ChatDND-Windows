@@ -155,10 +155,6 @@ public sealed class DndBackgroundWorker : IDisposable
             {
                 return;
             }
-            catch (InvalidOperationException)
-            {
-                return;
-            }
             catch (Exception exception)
             {
                 _log.Error($"后台扫描失败：{exception.Message}");
