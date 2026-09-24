@@ -2,8 +2,8 @@
 
 ## 自动检查
 
-- [x] `dotnet test ChatDND.sln` passes.
-- [x] `dotnet build ChatDND.sln --no-restore` completes with 0 warnings and 0 errors.
+- [x] `dotnet test ChatDND.sln -c Release` passes.
+- [x] `dotnet build ChatDND.sln -c Release --no-restore` completes with 0 warnings and 0 errors.
 - [x] Framework-dependent `win-x64` publish succeeds.
 - [x] The published executable starts and remains running for a smoke-test interval.
 - [x] `tools/Measure-ChatDND.ps1` records idle working set values.
