@@ -1,5 +1,31 @@
 # 修改记录
 
+## 2026-09-23 - 新功能 - 修改人：Codex
+
+### 问题描述
+
+首次运行需要向用户展示可配置的候选应用，避免没有规则时静默进入无效状态。
+
+### 解决方案
+
+新增 `CandidateApp` 和 `ProcessDiscoveryService`，从当前音频会话中发现进程，按规范化完整路径去重，跳过当前程序自身和无法规范化的路径，按显示名排序输出。
+
+### 修改明细
+
+| 文件 | 改动点 | 改动类型 | 说明 |
+|---|---|---|---|
+| `src/ChatDND.Core/Models/CandidateApp.cs` | 候选应用模型 | 新功能 | 保存显示名和进程路径 |
+| `src/ChatDND.Core/Services/ProcessDiscoveryService.cs` | 候选发现 | 新功能 | 去重、跳过当前进程并生成候选列表 |
+| `tests/ChatDND.Core.Tests/Services/ProcessDiscoveryServiceTests.cs` | 发现测试 | 测试 | 覆盖重复路径和当前进程排除 |
+
+### 验证方法
+
+运行 `dotnet test tests/ChatDND.Core.Tests/ChatDND.Core.Tests.csproj --filter FullyQualifiedName~ProcessDiscoveryServiceTests`，再运行 `dotnet test ChatDND.sln`。
+
+### 预期效果和潜在风险
+
+首次运行界面可以展示候选应用，但仍需要用户确认或手动选择 EXE 路径。
+
 ## 2026-09-23 - Bug修复 - 严重程度：高 - 修改人：Codex
 
 ### 问题描述
