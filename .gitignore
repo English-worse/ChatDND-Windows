@@ -8,3 +8,5 @@ TestResults/
 *.suo
 logs/
 .superpowers/sdd/
+docs/CHANGELOG.md
+dist/

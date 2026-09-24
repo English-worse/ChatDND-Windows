@@ -15,6 +15,7 @@
     <Description>Windows 应用级免打扰工具</Description>
     <Company>ChatDND</Company>
     <Version>0.1.0</Version>
+    <AssemblyName>ChatDND</AssemblyName>
     <ApplicationIcon>Assets\ChatDND.ico</ApplicationIcon>
   </PropertyGroup>
 

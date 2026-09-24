@@ -1,5 +1,5 @@
 param(
-    [string]$ProcessName = "ChatDND.App",
+    [string]$ProcessName = "ChatDND",
     [int]$Samples = 60
 )
 
