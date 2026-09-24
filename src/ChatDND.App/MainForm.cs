@@ -99,6 +99,20 @@ public sealed class MainForm : Form
             }
         };
 
+        var settings = new Button
+        {
+            Text = UiStrings.Settings,
+            AutoSize = true
+        };
+        settings.Click += (_, _) =>
+        {
+            using var form = new AppSettingsForm(_controller);
+            if (form.ShowDialog(this) == DialogResult.OK)
+            {
+                RefreshState();
+            }
+        };
+
         _toggle.CheckedChanged += (_, _) =>
         {
             if (_updating)
@@ -147,7 +161,7 @@ public sealed class MainForm : Form
             AutoSize = true,
             FlowDirection = FlowDirection.LeftToRight
         };
-        buttons.Controls.AddRange([addExe, addCurrent, remove]);
+        buttons.Controls.AddRange([addExe, addCurrent, remove, settings]);
 
         Controls.Add(_rules);
         Controls.Add(buttons);

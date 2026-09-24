@@ -1,5 +1,38 @@
 # 修改记录
 
+## 2026-09-23 - 新功能 - 修改人：Codex
+
+### 问题描述
+
+主界面没有通用设置入口，用户无法修改自动开启、启动最小化、管理员自启和扫描间隔；删除最后一个启用规则后也可能继续显示免打扰已开启。
+
+### 解决方案
+
+新增中文 `AppSettingsForm`，从主界面和托盘菜单打开，提供自动开启、启动最小化、管理员自启和扫描间隔设置。管理员自启通过 `schtasks.exe` 创建 `ChatDND-AdminStartup` 最高权限登录任务；保存时如果任务创建或删除失败，会显示中文错误并保留原配置。删除最后一个启用规则时主动关闭免打扰。
+
+### 修改明细
+
+| 文件 | 改动点 | 改动类型 | 说明 |
+|---|---|---|---|
+| `src/ChatDND.Core/Services/DndSettingsUpdater.cs` | 设置更新 | 新功能 | 保留规则并约束扫描间隔 |
+| `src/ChatDND.Core/Startup/AdminStartupTask.cs` | 管理员自启参数 | 新功能 | 构造任务计划和删除参数 |
+| `src/ChatDND.App/AdminStartupService.cs` | 管理员自启服务 | 新功能 | 调用 `schtasks.exe` 创建或删除任务 |
+| `src/ChatDND.App/AppSettingsForm.cs` | 设置子窗口 | 新功能 | 中文复选框、数字输入框和保存/取消 |
+| `src/ChatDND.App/MainForm.cs` | 设置入口和规则清理 | 新功能 | 增加“设置”按钮，删除最后一个规则后关闭免打扰 |
+| `src/ChatDND.App/TrayApplicationContext.cs` | 托盘设置入口 | 新功能 | 增加“设置”菜单项 |
+| `src/ChatDND.App/AppController.cs` | 设置保存和规则管理 | 新功能 | 调用设置更新器和管理员自启服务 |
+| `src/ChatDND.App/Program.cs` | 启动最小化 | 新功能 | 根据设置决定是否显示主界面 |
+| `tests/ChatDND.Core.Tests/Services/DndSettingsUpdaterTests.cs` | 设置测试 | 测试 | 覆盖规则保留和扫描间隔约束 |
+| `tests/ChatDND.Core.Tests/Startup/AdminStartupTaskTests.cs` | 自启测试 | 测试 | 覆盖任务创建和删除参数 |
+
+### 验证方法
+
+运行 `dotnet test tests/ChatDND.Core.Tests/ChatDND.Core.Tests.csproj --filter "FullyQualifiedName~DndSettingsUpdaterTests|FullyQualifiedName~AdminStartupTaskTests|FullyQualifiedName~UiStringsTests"`，再运行 `dotnet test ChatDND.sln` 和 `dotnet build ChatDND.sln --no-restore`。
+
+### 预期效果和潜在风险
+
+普通用户可以通过中文子窗口修改设置，管理员自启失败不会静默保存。创建最高权限任务可能受 Windows 任务计划程序和账户权限限制，失败时会明确提示。
+
 ## 2026-09-23 - 配置变更 - 修改人：Codex
 
 ### 问题描述

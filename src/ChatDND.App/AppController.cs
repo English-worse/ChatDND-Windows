@@ -11,6 +11,7 @@ public sealed class AppController : IDisposable
     private readonly RecoveryService _recovery;
     private readonly AppRuleStore _store;
     private readonly ProcessDiscoveryService _discovery;
+    private readonly IAdminStartupService _adminStartup;
     private readonly ILog _log;
     private readonly System.Windows.Forms.Timer _timer;
     private DndSettings _settings;
@@ -20,12 +21,14 @@ public sealed class AppController : IDisposable
         RecoveryService recovery,
         AppRuleStore store,
         ProcessDiscoveryService discovery,
+        IAdminStartupService adminStartup,
         ILog log)
     {
         _coordinator = coordinator;
         _recovery = recovery;
         _store = store;
         _discovery = discovery;
+        _adminStartup = adminStartup;
         _log = log;
         _settings = store.Load();
         _timer = new System.Windows.Forms.Timer
@@ -106,6 +109,31 @@ public sealed class AppController : IDisposable
         _timer.Interval = settings.ScanIntervalMs;
     }
 
+    public void SaveGeneralSettings(
+        bool autoEnableOnLaunch,
+        bool minimizeToTrayOnStartup,
+        bool runAsAdministratorAtStartup,
+        int scanIntervalMs)
+    {
+        if (runAsAdministratorAtStartup != _settings.RunAsAdministratorAtStartup)
+        {
+            var updated = runAsAdministratorAtStartup
+                ? _adminStartup.TryEnable()
+                : _adminStartup.TryDisable();
+            if (!updated)
+            {
+                throw new InvalidOperationException(UiStrings.AdminStartupFailed);
+            }
+        }
+
+        SaveSettings(DndSettingsUpdater.UpdateGeneralSettings(
+            _settings,
+            autoEnableOnLaunch,
+            minimizeToTrayOnStartup,
+            runAsAdministratorAtStartup,
+            scanIntervalMs));
+    }
+
     public void AddRule(CandidateApp candidate)
     {
         AddRule(candidate.ProcessPath, candidate.DisplayName);
@@ -137,6 +165,11 @@ public sealed class AppController : IDisposable
                 .Where(item => item.Id != rule.Id)
                 .ToArray()
         });
+
+        if (!_settings.Rules.Any(item => item.Enabled) && _coordinator.IsEnabled)
+        {
+            Disable();
+        }
     }
 
     public void Dispose()

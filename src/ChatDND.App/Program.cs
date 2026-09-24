@@ -29,11 +29,13 @@ internal static class Program
         var coordinator = new DndCoordinator(provider, controller, journal);
         var recovery = new RecoveryService(provider, controller, journal);
         var discovery = new ProcessDiscoveryService(provider);
+        var adminStartup = new WindowsAdminStartupService();
         var appController = new AppController(
             coordinator,
             recovery,
             store,
             discovery,
+            adminStartup,
             log);
 
         var resumeDnd = args.Contains("--resume-dnd", StringComparer.OrdinalIgnoreCase)
@@ -63,7 +65,8 @@ internal static class Program
             singleInstance,
             elevationLauncher,
             isCurrentlyElevated);
-        if (appController.Settings.Rules.Count == 0)
+        if (appController.Settings.Rules.Count == 0
+            || !appController.Settings.MinimizeToTrayOnStartup)
         {
             context.ShowMainForm();
         }

@@ -48,6 +48,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         menu.Items.Add(UiStrings.EnableDnd, null, (_, _) => Execute(_controller.Enable));
         menu.Items.Add(UiStrings.DisableDnd, null, (_, _) => Execute(_controller.Disable));
         menu.Items.Add("显示主界面", null, (_, _) => ShowMainForm());
+        menu.Items.Add(UiStrings.Settings, null, (_, _) => ShowSettings());
         if (!_isElevated)
         {
             menu.Items.Add(UiStrings.RunElevated, null, (_, _) => Elevate());
@@ -59,6 +60,13 @@ public sealed class TrayApplicationContext : ApplicationContext
             ExitThread();
         });
         return menu;
+    }
+
+    private void ShowSettings()
+    {
+        using var form = new AppSettingsForm(_controller);
+        form.ShowDialog(_mainForm);
+        _mainForm?.RefreshState();
     }
 
     private void Elevate()

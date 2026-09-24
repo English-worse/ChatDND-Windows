@@ -8,6 +8,15 @@ public static class UiStrings
     public const string AddCurrentApp = "添加当前应用";
     public const string AddExe = "手动选择程序";
     public const string RemoveSelectedRule = "删除选中规则";
+    public const string Settings = "设置";
+    public const string SettingsTitle = "ChatDND 设置";
+    public const string AutoEnableOnLaunch = "启动时自动开启免打扰";
+    public const string MinimizeToTrayOnStartup = "启动后最小化到托盘";
+    public const string RunAsAdministratorAtStartup = "开机后以管理员身份运行（需要管理员权限）";
+    public const string ScanInterval = "音频扫描间隔（毫秒）";
+    public const string Save = "保存";
+    public const string Cancel = "取消";
+    public const string AdminStartupFailed = "无法创建管理员自启任务，请确认当前账户具有任务计划程序权限。";
     public const string RecommendedApps = "推荐聊天应用";
     public const string NoRules = "请先选择至少一个需要静音的应用。";
     public const string NoCandidates = "当前没有发现可添加的应用，请使用“手动选择程序”。";
