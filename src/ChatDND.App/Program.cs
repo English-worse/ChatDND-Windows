@@ -1,5 +1,6 @@
 using ChatDND.Core.Audio;
 using ChatDND.Core.Logging;
+using ChatDND.Core.Privileges;
 using ChatDND.Core.Services;
 
 namespace ChatDND.App;
@@ -10,6 +11,11 @@ internal static class Program
     private static void Main(string[] args)
     {
         ApplicationConfiguration.Initialize();
+        using var singleInstance = new SingleInstanceGuard();
+        if (!singleInstance.TryAcquire())
+        {
+            return;
+        }
 
         var log = new RollingFileLog(AppPaths.LogPath);
         var source = new NaudioCoreAudioSessionSource(log);
@@ -27,7 +33,9 @@ internal static class Program
             discovery,
             log);
 
-        if (args.Contains("--resume-dnd", StringComparer.OrdinalIgnoreCase))
+        var resumeDnd = args.Contains("--resume-dnd", StringComparer.OrdinalIgnoreCase)
+            && appController.Settings.Rules.Any(rule => rule.Enabled);
+        if (resumeDnd)
         {
             appController.Enable();
         }
@@ -36,7 +44,13 @@ internal static class Program
             appController.Start();
         }
 
-        var context = new TrayApplicationContext(appController);
+        var elevationLauncher = new ElevationLauncher(
+            Application.ExecutablePath,
+            new SystemProcessLauncher());
+        var context = new TrayApplicationContext(
+            appController,
+            singleInstance,
+            elevationLauncher);
         if (appController.Settings.Rules.Count == 0)
         {
             context.ShowMainForm();

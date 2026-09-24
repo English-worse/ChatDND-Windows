@@ -1,5 +1,36 @@
 # 修改记录
 
+## 2026-09-23 - 新功能 - 修改人：Codex
+
+### 问题描述
+
+部分受保护音频会话在普通权限下无法修改，用户需要一个显式、可回退且带有中文风险说明的管理员模式。
+
+### 解决方案
+
+新增权限检测、`runas` 提权启动器和单实例互斥保护。托盘菜单提供管理员模式入口，先显示风险说明，再通过 UAC 重启高权限实例；普通实例暂停扫描并释放互斥锁，UAC 取消时重新获取锁并恢复普通模式。`--resume-dnd` 仅在存在启用规则时自动开启。
+
+### 修改明细
+
+| 文件 | 改动点 | 改动类型 | 说明 |
+|---|---|---|---|
+| `src/ChatDND.Core/Privileges/IPrivilegeService.cs` | 权限接口 | 新功能 | 抽象管理员状态检测 |
+| `src/ChatDND.Core/Privileges/PrivilegeService.cs` | 权限检测 | 新功能 | 使用 WindowsPrincipal 判断管理员身份 |
+| `src/ChatDND.Core/Privileges/IElevationLauncher.cs` | 提权接口 | 新功能 | 定义提权启动和进程启动抽象 |
+| `src/ChatDND.Core/Privileges/ElevationLauncher.cs` | 提权启动 | 新功能 | 使用 `runas` 和 `--resume-dnd` 参数重启 |
+| `src/ChatDND.Core/Privileges/SingleInstanceGuard.cs` | 单实例锁 | 新功能 | 支持获取、释放和取消 UAC 后重取 |
+| `src/ChatDND.App/Program.cs` | 权限交接 | 新功能 | 单实例启动和恢复参数处理 |
+| `src/ChatDND.App/TrayApplicationContext.cs` | 管理员菜单 | 新功能 | 中文风险确认和 UAC 回退 |
+| `tests/ChatDND.Core.Tests/Privileges/*` | 权限测试 | 测试 | 覆盖权限检测和提权参数 |
+
+### 验证方法
+
+运行 `dotnet test ChatDND.sln`、`dotnet build ChatDND.sln --no-restore`，并手工检查 UAC 风险确认和取消 UAC 后普通实例继续运行。
+
+### 预期效果和潜在风险
+
+管理员模式默认关闭，普通启动不弹 UAC；管理员模式仍只操作音频会话，不读取联系人或应用内部状态。
+
 ## 2026-09-23 - Bug修复 - 严重程度：中 - 修改人：Codex
 
 ### 问题描述

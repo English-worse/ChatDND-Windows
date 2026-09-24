@@ -1,14 +1,23 @@
+using ChatDND.Core.Privileges;
+
 namespace ChatDND.App;
 
 public sealed class TrayApplicationContext : ApplicationContext
 {
     private readonly NotifyIcon _icon;
     private readonly AppController _controller;
+    private readonly SingleInstanceGuard _singleInstance;
+    private readonly IElevationLauncher _elevationLauncher;
     private MainForm? _mainForm;
 
-    public TrayApplicationContext(AppController controller)
+    public TrayApplicationContext(
+        AppController controller,
+        SingleInstanceGuard singleInstance,
+        IElevationLauncher elevationLauncher)
     {
         _controller = controller;
+        _singleInstance = singleInstance;
+        _elevationLauncher = elevationLauncher;
         _icon = new NotifyIcon
         {
             Icon = SystemIcons.Application,
@@ -36,6 +45,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         menu.Items.Add(UiStrings.EnableDnd, null, (_, _) => Execute(_controller.Enable));
         menu.Items.Add(UiStrings.DisableDnd, null, (_, _) => Execute(_controller.Disable));
         menu.Items.Add("显示主界面", null, (_, _) => ShowMainForm());
+        menu.Items.Add(UiStrings.RunElevated, null, (_, _) => Elevate());
         menu.Items.Add(UiStrings.ExitApplication, null, (_, _) =>
         {
             _controller.Dispose();
@@ -43,6 +53,36 @@ public sealed class TrayApplicationContext : ApplicationContext
             ExitThread();
         });
         return menu;
+    }
+
+    private void Elevate()
+    {
+        var result = MessageBox.Show(
+            UiStrings.ElevationRiskBody,
+            UiStrings.ElevationRiskTitle,
+            MessageBoxButtons.OKCancel,
+            MessageBoxIcon.Warning);
+        if (result != DialogResult.OK)
+        {
+            return;
+        }
+
+        _controller.PauseForElevation();
+        _singleInstance.Release();
+        if (_elevationLauncher.TryRestartElevated())
+        {
+            _icon.Visible = false;
+            ExitThread();
+            return;
+        }
+
+        _singleInstance.TryAcquire();
+        _controller.ResumeAfterFailedElevation();
+        MessageBox.Show(
+            "未能启动管理员模式，程序将继续使用普通权限。",
+            UiStrings.AppTitle,
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Information);
     }
 
     private void Execute(Action action)
