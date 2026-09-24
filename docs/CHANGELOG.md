@@ -4,6 +4,33 @@
 
 ### 问题描述
 
+程序需要统一的用户本地数据目录和中文日志，避免把运行数据写到目标聊天应用目录，也避免日志文件无限增长。
+
+### 解决方案
+
+新增 `AppPaths` 和 `RollingFileLog`，将设置、恢复日志和运行日志放在 `%LOCALAPPDATA%\ChatDND`；日志按大小滚动并保留一个历史文件。
+
+### 修改明细
+
+| 文件 | 改动点 | 改动类型 | 说明 |
+|---|---|---|---|
+| `src/ChatDND.Core/Services/AppPaths.cs` | 本地路径 | 新功能 | 统一设置、恢复日志和日志位置 |
+| `src/ChatDND.Core/Logging/RollingFileLog.cs` | 滚动日志 | 新功能 | 线程安全的滚动文件日志 |
+| `tests/ChatDND.Core.Tests/Services/AppPathsTests.cs` | 路径测试 | 测试 | 验证路径位于本地应用数据目录 |
+| `tests/ChatDND.Core.Tests/Logging/RollingFileLogTests.cs` | 日志测试 | 测试 | 覆盖中文错误写入和滚动 |
+
+### 验证方法
+
+运行 `dotnet test tests/ChatDND.Core.Tests/ChatDND.Core.Tests.csproj --filter "FullyQualifiedName~AppPathsTests|FullyQualifiedName~RollingFileLogTests"`，再运行 `dotnet test ChatDND.sln`。
+
+### 预期效果和潜在风险
+
+程序运行数据保持在本用户目录，不会写入聊天应用数据目录。日志滚动只保留一个历史文件，旧日志会被覆盖。
+
+## 2026-09-23 - 新功能 - 修改人：Codex
+
+### 问题描述
+
 首次运行需要向用户展示可配置的候选应用，避免没有规则时静默进入无效状态。
 
 ### 解决方案
