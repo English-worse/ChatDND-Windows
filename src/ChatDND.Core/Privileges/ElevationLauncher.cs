@@ -13,11 +13,14 @@ public sealed class ElevationLauncher : IElevationLauncher
         _launcher = launcher;
     }
 
-    public bool TryRestartElevated()
+    public bool TryRestartElevated(bool resumeDnd)
     {
+        var arguments = resumeDnd
+            ? "--elevated --resume-dnd"
+            : "--elevated";
         return _launcher.TryStart(
             _executablePath,
-            "--elevated --resume-dnd",
+            arguments,
             "runas");
     }
 }

@@ -2,7 +2,7 @@ namespace ChatDND.Core.Privileges;
 
 public interface IElevationLauncher
 {
-    bool TryRestartElevated();
+    bool TryRestartElevated(bool resumeDnd);
 }
 
 public interface IProcessLauncher

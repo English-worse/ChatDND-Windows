@@ -33,24 +33,22 @@ internal static class Program
             discovery,
             log);
 
-        var resumeDnd = args.Contains("--resume-dnd", StringComparer.OrdinalIgnoreCase)
-            && appController.Settings.Rules.Any(rule => rule.Enabled);
-        if (resumeDnd)
+        appController.Start();
+        if (args.Contains("--resume-dnd", StringComparer.OrdinalIgnoreCase)
+            && appController.Settings.Rules.Any(rule => rule.Enabled))
         {
             appController.Enable();
-        }
-        else
-        {
-            appController.Start();
         }
 
         var elevationLauncher = new ElevationLauncher(
             Application.ExecutablePath,
             new SystemProcessLauncher());
+        var isElevated = new PrivilegeService().IsElevated;
         var context = new TrayApplicationContext(
             appController,
             singleInstance,
-            elevationLauncher);
+            elevationLauncher,
+            isElevated);
         if (appController.Settings.Rules.Count == 0)
         {
             context.ShowMainForm();

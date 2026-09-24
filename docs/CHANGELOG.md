@@ -1,5 +1,37 @@
 # 修改记录
 
+## 2026-09-23 - Bug修复 - 严重程度：高 - 修改人：Codex
+
+### 问题描述
+
+Task 10 审查发现，普通实例直接把恢复日志所有权交给提权实例，会造成已静音会话被误记为原始静音并覆盖恢复记录；UAC 失败后的锁重取失败也未处理。
+
+### 根因分析
+
+提权重启没有保存“免打扰当时是否开启”，普通实例退出时没有先恢复自己修改过的会话；提权启动成功被错误地等同于交接成功；重新获取单实例锁的返回值被忽略。
+
+### 解决方案
+
+改为安全交接：普通实例先恢复自己修改过的会话并记录是否原本开启，释放互斥锁后才启动提权实例；提权实例只在明确传入 `--resume-dnd` 时重新开启；UAC 失败且锁无法重取时直接退出，不再留下第二个扫描实例。
+
+### 修改明细
+
+| 文件 | 改动点 | 改动类型 | 说明 |
+|---|---|---|---|
+| `src/ChatDND.App/AppController.cs` | 交接状态保存 | Bug修复 | `PrepareForElevation` 恢复会话并返回原免打扰状态 |
+| `src/ChatDND.App/TrayApplicationContext.cs` | UAC 交接和安全回退 | Bug修复 | 处理锁重取失败、按需传递恢复参数、已提权时隐藏入口 |
+| `src/ChatDND.App/Program.cs` | 启动恢复 | Bug修复 | 先执行恢复和正常启动，再按参数恢复免打扰 |
+| `src/ChatDND.Core/Privileges/ElevationLauncher.cs` | 提权参数 | Bug修复 | `--resume-dnd` 仅在之前确实开启时传入 |
+| `tests/ChatDND.Core.Tests/Privileges/ElevationLauncherTests.cs` | 提权测试 | 测试 | 覆盖开启和未开启两种参数 |
+
+### 验证方法
+
+运行 `dotnet test ChatDND.sln` 和 `dotnet build ChatDND.sln --no-restore`，并在 Task 11 手工验证 UAC 批准和取消。
+
+### 预期效果和潜在风险
+
+提权切换不再丢失恢复记录；UAC 取消后原实例能恢复原状态。切换期间可能短暂解除静音，这是为了避免永久静音而接受的代价。
+
 ## 2026-09-23 - 新功能 - 修改人：Codex
 
 ### 问题描述

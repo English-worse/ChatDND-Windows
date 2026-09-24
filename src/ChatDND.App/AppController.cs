@@ -72,17 +72,24 @@ public sealed class AppController : IDisposable
         _coordinator.Disable();
     }
 
-    public void PauseForElevation()
+    public bool PrepareForElevation()
     {
         _timer.Stop();
+        var wasEnabled = _coordinator.IsEnabled;
+        if (wasEnabled)
+        {
+            _coordinator.Disable();
+        }
+
         _store.Save(_settings);
+        return wasEnabled;
     }
 
-    public void ResumeAfterFailedElevation()
+    public void ResumeAfterFailedElevation(bool wasEnabled)
     {
-        if (_coordinator.IsEnabled)
+        if (wasEnabled)
         {
-            _timer.Start();
+            Enable();
         }
     }
 
