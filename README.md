@@ -18,6 +18,12 @@
   <a href="#从源码构建">从源码构建</a>
 </p>
 
+<p align="center">
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue" alt="PolyForm Noncommercial 1.0.0">
+  </a>
+</p>
+
 ## 简介
 
 Windows 自带的“勿扰模式”主要抑制系统通知，无法拦截微信、QQ、钉钉等桌面应用自行播放的提示音。
