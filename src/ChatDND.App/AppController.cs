@@ -46,9 +46,15 @@ public sealed class AppController : IDisposable
 
     public void Start()
     {
+        Start(autoEnable: true);
+    }
+
+    public void Start(bool autoEnable)
+    {
         _log.Info("ChatDND 启动。");
         _recovery.Recover();
-        if (_settings.AutoEnableOnLaunch
+        if (autoEnable
+            && _settings.AutoEnableOnLaunch
             && _settings.Rules.Any(rule => rule.Enabled))
         {
             Enable();

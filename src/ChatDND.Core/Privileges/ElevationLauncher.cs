@@ -13,11 +13,14 @@ public sealed class ElevationLauncher : IElevationLauncher
         _launcher = launcher;
     }
 
-    public bool TryRestartElevated(bool resumeDnd)
+    public bool TryRestartElevated(bool resumeDnd, string handoffToken)
     {
-        var arguments = resumeDnd
-            ? "--elevated --resume-dnd"
-            : "--elevated";
+        var arguments = $"--elevated --handoff={handoffToken}";
+        if (resumeDnd)
+        {
+            arguments += " --resume-dnd";
+        }
+
         return _launcher.TryStart(
             _executablePath,
             arguments,

@@ -12,11 +12,14 @@ public sealed class ElevationLauncherTests
             @"C:\Apps\ChatDND.exe",
             launcher);
 
-        var result = service.TryRestartElevated(resumeDnd: true);
+        var result = service.TryRestartElevated(
+            resumeDnd: true,
+            handoffToken: "test-token");
 
         Assert.True(result);
         Assert.Equal("runas", launcher.Verb);
         Assert.Contains("--elevated", launcher.Arguments);
+        Assert.Contains("--handoff=test-token", launcher.Arguments);
         Assert.Contains("--resume-dnd", launcher.Arguments);
     }
 
@@ -28,7 +31,9 @@ public sealed class ElevationLauncherTests
             @"C:\Apps\ChatDND.exe",
             launcher);
 
-        var result = service.TryRestartElevated(resumeDnd: false);
+        var result = service.TryRestartElevated(
+            resumeDnd: false,
+            handoffToken: "test-token");
 
         Assert.True(result);
         Assert.DoesNotContain("--resume-dnd", launcher.Arguments);

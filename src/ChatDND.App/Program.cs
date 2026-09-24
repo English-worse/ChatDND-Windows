@@ -18,6 +18,9 @@ internal static class Program
         }
 
         var log = new RollingFileLog(AppPaths.LogPath);
+        var launchedElevated = args.Contains("--elevated", StringComparer.OrdinalIgnoreCase);
+        var handoffToken = GetArgumentValue(args, "--handoff=");
+        using var handshake = ElevationHandshake.TryOpen(handoffToken);
         var source = new NaudioCoreAudioSessionSource(log);
         var provider = new WasapiAudioSessionProvider(source);
         var controller = new WasapiAudioSessionController(source);
@@ -33,27 +36,45 @@ internal static class Program
             discovery,
             log);
 
-        appController.Start();
-        if (args.Contains("--resume-dnd", StringComparer.OrdinalIgnoreCase)
-            && appController.Settings.Rules.Any(rule => rule.Enabled))
+        var resumeDnd = args.Contains("--resume-dnd", StringComparer.OrdinalIgnoreCase)
+            && appController.Settings.Rules.Any(rule => rule.Enabled);
+        if (launchedElevated)
+        {
+            appController.Start(autoEnable: false);
+        }
+        else
+        {
+            appController.Start();
+        }
+
+        if (resumeDnd)
         {
             appController.Enable();
         }
 
+        handshake?.SignalReady();
+
         var elevationLauncher = new ElevationLauncher(
             Application.ExecutablePath,
             new SystemProcessLauncher());
-        var isElevated = new PrivilegeService().IsElevated;
+        var isCurrentlyElevated = new PrivilegeService().IsElevated;
         var context = new TrayApplicationContext(
             appController,
             singleInstance,
             elevationLauncher,
-            isElevated);
+            isCurrentlyElevated);
         if (appController.Settings.Rules.Count == 0)
         {
             context.ShowMainForm();
         }
 
         Application.Run(context);
+    }
+
+    private static string? GetArgumentValue(string[] args, string prefix)
+    {
+        var value = args.FirstOrDefault(
+            argument => argument.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+        return value is null ? null : value[prefix.Length..];
     }
 }

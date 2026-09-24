@@ -4,6 +4,39 @@
 
 ### 问题描述
 
+第一次 Task 10 修复后，提权实例仍会因 `Start()` 的默认自动开启逻辑重新打开用户已经关闭的免打扰；父实例也只确认子进程启动成功，没有确认子进程真正接管单实例。
+
+### 根因分析
+
+提权实例执行了普通启动路径；父实例缺少子进程就绪信号，无法区分“进程已启动”和“交接已完成”。
+
+### 解决方案
+
+提权实例使用 `Start(autoEnable: false)`，只有显式 `--resume-dnd` 才重新开启；增加命名事件握手，子实例取得互斥锁并完成初始化后发送就绪信号，父实例等待超时后才判定交接失败并重新获取锁。
+
+### 修改明细
+
+| 文件 | 改动点 | 改动类型 | 说明 |
+|---|---|---|---|
+| `src/ChatDND.Core/Privileges/ElevationHandshake.cs` | 交接握手 | Bug修复 | 命名事件传递子实例就绪状态 |
+| `src/ChatDND.Core/Privileges/ElevationLauncher.cs` | 提权参数 | Bug修复 | 传递握手令牌 |
+| `src/ChatDND.App/AppController.cs` | 启动控制 | Bug修复 | 支持 `Start(autoEnable: false)` |
+| `src/ChatDND.App/Program.cs` | 提权启动 | Bug修复 | 提权实例不自动开启，初始化后发送就绪信号 |
+| `src/ChatDND.App/TrayApplicationContext.cs` | 交接确认 | Bug修复 | 等待握手成功后才退出，超时则恢复普通实例 |
+| `tests/ChatDND.Core.Tests/Privileges/ElevationLauncherTests.cs` | 参数测试 | 测试 | 覆盖握手令牌和恢复参数 |
+
+### 验证方法
+
+运行 `dotnet test ChatDND.sln` 和 `dotnet build ChatDND.sln --no-restore`，随后执行 Task 11 的 UAC 手工验收。
+
+### 预期效果和潜在风险
+
+提权实例会保持用户原有的免打扰状态；交接超时不会留下无锁扫描实例。跨账户或安全软件延迟可能导致握手超时，因此保留普通实例回退路径。
+
+## 2026-09-23 - Bug修复 - 严重程度：高 - 修改人：Codex
+
+### 问题描述
+
 Task 10 审查发现，普通实例直接把恢复日志所有权交给提权实例，会造成已静音会话被误记为原始静音并覆盖恢复记录；UAC 失败后的锁重取失败也未处理。
 
 ### 根因分析

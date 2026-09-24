@@ -76,8 +76,10 @@ public sealed class TrayApplicationContext : ApplicationContext
         var wasEnabled = _controller.PrepareForElevation();
         var resumeDnd = wasEnabled
             && _controller.Settings.Rules.Any(rule => rule.Enabled);
+        using var handshake = ElevationHandshake.Create();
         _singleInstance.Release();
-        if (_elevationLauncher.TryRestartElevated(resumeDnd))
+        if (_elevationLauncher.TryRestartElevated(resumeDnd, handshake.Token)
+            && handshake.WaitForReady(TimeSpan.FromSeconds(10)))
         {
             _icon.Visible = false;
             ExitThread();
