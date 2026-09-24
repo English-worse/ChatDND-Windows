@@ -4,6 +4,36 @@
 
 ### 问题描述
 
+核心逻辑已经可用，但缺少可操作的中文界面、托盘生命周期、应用规则管理和首次运行引导。
+
+### 解决方案
+
+新增 `UiStrings`、`AppController`、`MainForm`、`SettingsForm` 和 `TrayApplicationContext`。程序启动后创建托盘上下文；没有规则时打开中文主界面，存在规则且设置允许时自动开启免打扰。主界面支持发现候选应用、手动添加 EXE、删除规则和开关免打扰。
+
+### 修改明细
+
+| 文件 | 改动点 | 改动类型 | 说明 |
+|---|---|---|---|
+| `src/ChatDND.App/UiStrings.cs` | 中文文案 | 新功能 | 统一界面、托盘和风险提示文字 |
+| `src/ChatDND.App/AppController.cs` | 应用状态控制 | 新功能 | 管理扫描计时器、规则、启动恢复和免打扰状态 |
+| `src/ChatDND.App/MainForm.cs` | 中文主界面 | 新功能 | 开关、规则列表、添加/删除应用和状态显示 |
+| `src/ChatDND.App/SettingsForm.cs` | 候选应用选择 | 新功能 | 从发现的进程中选择应用 |
+| `src/ChatDND.App/TrayApplicationContext.cs` | 托盘生命周期 | 新功能 | 托盘菜单、主界面显示和安全退出 |
+| `src/ChatDND.App/Program.cs` | 程序入口 | 新功能 | 组装 Core 服务和 WinForms 上下文 |
+| `tests/ChatDND.Core.Tests/App/UiStringsTests.cs` | UI 文案测试 | 测试 | 验证主要界面文字为中文 |
+
+### 验证方法
+
+运行 `dotnet test ChatDND.sln`，并短暂启动 `ChatDND.App.exe` 验证进程保持运行。
+
+### 预期效果和潜在风险
+
+程序已经具备可运行的中文托盘界面和首次配置入口。真实多开音频会话仍需 Task 11 的本机集成验证。
+
+## 2026-09-23 - 新功能 - 修改人：Codex
+
+### 问题描述
+
 程序需要统一的用户本地数据目录和中文日志，避免把运行数据写到目标聊天应用目录，也避免日志文件无限增长。
 
 ### 解决方案
