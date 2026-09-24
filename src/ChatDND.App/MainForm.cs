@@ -8,8 +8,9 @@ public sealed class MainForm : Form
     private readonly CheckBox _toggle;
     private readonly ListBox _rules;
     private readonly Label _status;
+    private bool _updating;
 
-    public MainForm(AppController controller, IReadOnlyList<CandidateApp> candidates)
+    public MainForm(AppController controller)
     {
         _controller = controller;
         Text = UiStrings.AppTitle;
@@ -100,6 +101,11 @@ public sealed class MainForm : Form
 
         _toggle.CheckedChanged += (_, _) =>
         {
+            if (_updating)
+            {
+                return;
+            }
+
             try
             {
                 if (_toggle.Checked)
@@ -149,9 +155,23 @@ public sealed class MainForm : Form
 
         FormClosing += (_, args) =>
         {
-            args.Cancel = true;
-            Hide();
+            if (args.CloseReason == CloseReason.UserClosing)
+            {
+                args.Cancel = true;
+                Hide();
+            }
         };
+    }
+
+    public void RefreshState()
+    {
+        _updating = true;
+        _toggle.Checked = _controller.IsEnabled;
+        _toggle.Text = _controller.IsEnabled
+            ? UiStrings.DisableDnd
+            : UiStrings.EnableDnd;
+        _updating = false;
+        RefreshRules();
     }
 
     private void RefreshRules()

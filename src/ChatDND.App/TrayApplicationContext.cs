@@ -23,9 +23,7 @@ public sealed class TrayApplicationContext : ApplicationContext
     {
         if (_mainForm is null || _mainForm.IsDisposed)
         {
-            _mainForm = new MainForm(
-                _controller,
-                _controller.DiscoverCandidates());
+            _mainForm = new MainForm(_controller);
         }
 
         _mainForm.Show();
@@ -47,11 +45,12 @@ public sealed class TrayApplicationContext : ApplicationContext
         return menu;
     }
 
-    private static void Execute(Action action)
+    private void Execute(Action action)
     {
         try
         {
             action();
+            _mainForm?.RefreshState();
         }
         catch (InvalidOperationException exception)
         {
